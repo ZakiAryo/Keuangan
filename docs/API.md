@@ -399,34 +399,39 @@ DELETE /api/transfers?id=transfer-uuid
 
 ### GET `/api/budgets`
 
-Mengambil budget dan nilai `spent`.
+Mengambil budget dan nilai `spent`. Pemakaian budget dihitung dari semua
+transaksi `expense` pada rentang `start_date` sampai `end_date` dengan nama
+kategori yang sama, tanpa memisahkan Cash dan Non-Cash.
 
 Query param opsional:
 
 | Param | Format | Fungsi |
 | --- | --- | --- |
-| `month` | `YYYY-MM` | Filter bulan |
+| `from` | `YYYY-MM-DD` | Ambil budget yang beririsan setelah tanggal ini |
+| `to` | `YYYY-MM-DD` | Ambil budget yang beririsan sebelum tanggal ini |
 
 Contoh:
 
 ```http
-GET /api/budgets?month=2026-06
+GET /api/budgets?from=2026-06-01&to=2026-06-30
 ```
 
 ### POST `/api/budgets`
 
-Membuat atau memperbarui budget berdasarkan kombinasi `category_id` dan
-`month`.
+Membuat atau memperbarui budget berdasarkan kombinasi `category_id`,
+`start_date`, dan `end_date`.
 
 ```json
 {
   "category_id": "uuid-kategori-pengeluaran",
-  "month": "2026-06-01",
+  "start_date": "2026-06-01",
+  "end_date": "2026-06-30",
   "amount": 1500000
 }
 ```
 
-Tanggal `month` harus selalu hari pertama pada bulan tersebut.
+`category_id` harus berasal dari kategori pengeluaran. Tanggal awal tidak boleh
+melewati tanggal akhir.
 
 ### PUT `/api/budgets/:id`
 
@@ -434,6 +439,8 @@ Memperbarui budget berdasarkan UUID.
 
 ```json
 {
+  "start_date": "2026-06-05",
+  "end_date": "2026-07-04",
   "amount": 1750000
 }
 ```

@@ -86,5 +86,13 @@ export function formatSupabaseError(message: string) {
     ].join(" ");
   }
 
+  if (/column budgets\.(start_date|end_date) does not exist/i.test(message)) {
+    return [
+      "Fitur rentang tanggal budget belum aktif di database.",
+      "Jalankan supabase/migrations/20260607_update_budget_date_range.sql",
+      "melalui Supabase SQL Editor, lalu muat ulang aplikasi.",
+    ].join(" ");
+  }
+
   return message;
 }

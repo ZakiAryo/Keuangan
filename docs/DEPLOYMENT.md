@@ -24,6 +24,10 @@ untuk membuat kolom lampiran dan bucket Storage privat.
 Jalankan `supabase/migrations/20260607_add_payment_reminders.sql` untuk
 mengaktifkan reminder tagihan dan memperbarui fungsi backup/restore.
 
+Jalankan `supabase/migrations/20260607_update_budget_date_range.sql` untuk
+mengaktifkan budget berbasis rentang tanggal. Jalankan setelah migration
+reminder agar fungsi restore memakai versi terbaru.
+
 ```bash
 git add .
 git commit -m "Create personal finance tracker"
@@ -74,7 +78,7 @@ bandingkan dengan hasil `npm run build` lokal.
 - Wallet dapat dibuat.
 - Transaksi dapat dibuat dan saldo berubah.
 - Transfer memengaruhi wallet asal dan tujuan.
-- Budget menampilkan pemakaian.
+- Budget dapat memakai rentang tanggal bebas dan menghitung Cash/Non-Cash secara akumulasi.
 - Reminder dapat dibuat, diedit, ditandai lunas, dan muncul di dashboard.
 - Laporan dan export CSV bekerja.
 - Filter Cash/Non-Cash bekerja pada transaksi, laporan, dan CSV.

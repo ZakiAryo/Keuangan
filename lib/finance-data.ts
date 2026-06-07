@@ -67,13 +67,15 @@ export function calculateWalletBalances(
 
 export async function getDashboardData(): Promise<DashboardData> {
   const supabase = getSupabaseAdmin();
+  const today = format(new Date(), "yyyy-MM-dd");
   const [walletResult, budgetResult, transactions, transfers] =
     await Promise.all([
       supabase.from("wallets").select("*").order("created_at"),
       supabase
         .from("budgets")
-        .select("*, category:categories(id,name,color,payment_method)")
-        .eq("month", format(startOfMonth(new Date()), "yyyy-MM-dd")),
+        .select("*, category:categories(id,name,color,type)")
+        .lte("start_date", today)
+        .gte("end_date", today),
       fetchTransactions(),
       fetchTransfers(),
     ]);
@@ -102,14 +104,24 @@ export async function getDashboardData(): Promise<DashboardData> {
     (total, item) => total + toNumber(item.amount),
     0,
   );
-  const budgetCategoryIds = new Set(budgets.map((item) => item.category_id));
-  const budgetUsed = currentTransactions
-    .filter(
-      (transaction) =>
-        transaction.type === "expense" &&
-        budgetCategoryIds.has(transaction.category_id),
-    )
-    .reduce((total, transaction) => total + toNumber(transaction.amount), 0);
+  const budgetUsed = budgets.reduce(
+    (total, budgetItem) =>
+      total +
+      transactions
+        .filter(
+          (transaction) =>
+            transaction.type === "expense" &&
+            transaction.transaction_date >= budgetItem.start_date &&
+            transaction.transaction_date <= budgetItem.end_date &&
+            transaction.category?.type === "expense" &&
+            transaction.category?.name === budgetItem.category?.name,
+        )
+        .reduce(
+          (spent, transaction) => spent + toNumber(transaction.amount),
+          0,
+        ),
+    0,
+  );
 
   const monthKeys = Array.from({ length: 6 }, (_, index) =>
     format(startOfMonth(subMonths(new Date(), 5 - index)), "yyyy-MM"),

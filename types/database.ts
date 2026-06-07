@@ -142,12 +142,16 @@ export type Database = {
           id: string;
           category_id: string;
           month: string;
+          start_date: string;
+          end_date: string;
           amount: number;
         };
         Insert: {
           id?: string;
           category_id: string;
-          month: string;
+          month?: string;
+          start_date: string;
+          end_date: string;
           amount: number;
           created_at?: string;
           updated_at?: string;
@@ -156,6 +160,8 @@ export type Database = {
           id?: string;
           category_id?: string;
           month?: string;
+          start_date?: string;
+          end_date?: string;
           amount?: number;
           created_at?: string;
           updated_at?: string;

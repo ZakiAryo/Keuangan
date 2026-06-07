@@ -30,11 +30,34 @@ export const transactionSchema = z.object({
   notes: z.string().trim().max(1000).nullable().optional(),
 });
 
-export const budgetSchema = z.object({
+const budgetFields = {
   category_id: id,
-  month: date,
+  start_date: date,
+  end_date: date,
   amount: money,
-});
+};
+
+export const budgetSchema = z
+  .object(budgetFields)
+  .refine((value) => value.start_date <= value.end_date, {
+    message: "Tanggal awal budget tidak boleh melewati tanggal akhir.",
+    path: ["end_date"],
+  });
+
+export const budgetUpdateSchema = z
+  .object(budgetFields)
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "Minimal satu field harus diperbarui.",
+  })
+  .refine(
+    (value) =>
+      !value.start_date || !value.end_date || value.start_date <= value.end_date,
+    {
+      message: "Tanggal awal budget tidak boleh melewati tanggal akhir.",
+      path: ["end_date"],
+    },
+  );
 
 const paymentReminderFields = {
   title: z.string().trim().min(1).max(120),

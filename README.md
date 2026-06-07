@@ -1,7 +1,7 @@
 # Personal Finance Tracker
 
 Personal Finance Tracker adalah aplikasi keuangan pribadi berbasis web untuk
-mencatat pemasukan, pengeluaran, saldo dompet, transfer, budget bulanan, dan
+mencatat pemasukan, pengeluaran, saldo dompet, transfer, budget periode, dan
 laporan keuangan dalam satu dashboard. Aplikasi memakai PIN gate sederhana
 tanpa proses login atau registrasi.
 
@@ -18,7 +18,7 @@ privat, responsif, dan mudah dipasang di Vercel dengan database Supabase.
   pembayaran Cash/Non-Cash.
 - **Manajemen wallet/dompet** dengan saldo awal dan saldo berjalan.
 - **Transfer antar wallet** termasuk biaya transfer.
-- **Budget bulanan** per kategori dan indikator pemakaian.
+- **Budget periode** per kategori dengan rentang tanggal bebas dan indikator pemakaian.
 - **Reminder tagihan** dengan tanggal jatuh tempo, nominal opsional, status
   terlambat/hari ini, dan penandaan sudah dibayar.
 - **Laporan keuangan** berdasarkan rentang tanggal.
@@ -153,6 +153,9 @@ Migration ini menambahkan metadata lampiran dan bucket Storage privat.
 Untuk mengaktifkan reminder pada database lama, jalankan
 [`supabase/migrations/20260607_add_payment_reminders.sql`](supabase/migrations/20260607_add_payment_reminders.sql).
 
+Untuk mengaktifkan rentang tanggal budget pada database lama, jalankan
+[`supabase/migrations/20260607_update_budget_date_range.sql`](supabase/migrations/20260607_update_budget_date_range.sql).
+
 RLS diaktifkan tanpa policy publik. Semua akses data dilakukan oleh route server
 menggunakan service role key setelah session PIN diverifikasi.
 
@@ -222,11 +225,15 @@ on conflict (id) do update set
 create table if not exists public.budgets (
   id uuid primary key default gen_random_uuid(),
   category_id uuid not null references public.categories(id) on delete cascade,
-  month date not null check (date_trunc('month', month)::date = month),
+  month date not null default date_trunc('month', current_date)::date
+    check (date_trunc('month', month)::date = month),
+  start_date date not null default current_date,
+  end_date date not null default current_date,
   amount numeric(18,2) not null check (amount > 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (category_id, month)
+  check (start_date <= end_date),
+  unique (category_id, start_date, end_date)
 );
 
 create table if not exists public.wallet_transfers (
@@ -266,6 +273,8 @@ create index if not exists transactions_wallet_idx
 create index if not exists transactions_category_idx
   on public.transactions (category_id);
 create index if not exists budgets_month_idx on public.budgets (month);
+create index if not exists budgets_date_range_idx
+  on public.budgets (start_date, end_date);
 create index if not exists wallet_transfers_date_idx
   on public.wallet_transfers (transfer_date desc);
 create index if not exists payment_reminders_status_due_date_idx
@@ -360,11 +369,23 @@ begin
       category_id uuid, wallet_id uuid, created_at timestamptz,
       updated_at timestamptz);
 
-  insert into budgets (id, category_id, month, amount, created_at, updated_at)
-  select id, category_id, month, amount, created_at, updated_at
+  insert into budgets (
+    id, category_id, month, start_date, end_date, amount, created_at, updated_at
+  )
+  select id, category_id,
+    coalesce(month, date_trunc('month', coalesce(start_date, current_date))::date),
+    coalesce(start_date, month, current_date),
+    coalesce(
+      end_date,
+      (date_trunc('month', coalesce(month, start_date, current_date)) +
+        interval '1 month - 1 day')::date
+    ),
+    amount, created_at, updated_at
   from jsonb_to_recordset(payload #> '{data,budgets}')
-    as x(id uuid, category_id uuid, month date, amount numeric,
-      created_at timestamptz, updated_at timestamptz);
+    as x(
+      id uuid, category_id uuid, month date, start_date date, end_date date,
+      amount numeric, created_at timestamptz, updated_at timestamptz
+    );
 
   insert into wallet_transfers (
     id, from_wallet_id, to_wallet_id, amount, fee, transfer_date,
@@ -448,7 +469,7 @@ Detail lengkap tersedia di [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 4. Catat pemasukan pertama dan pilih metode pembayaran.
 5. Catat pengeluaran harian sebagai Cash atau Non-Cash.
 6. Pantau saldo dan grafik pada dashboard.
-7. Buat budget bulanan per kategori pengeluaran.
+7. Buat budget periode per kategori pengeluaran.
 8. Tambahkan reminder tagihan dan tandai sudah dibayar setelah selesai.
 9. Buka laporan dan pilih rentang tanggal.
 10. Export transaksi ke CSV atau buat backup JSON.
@@ -621,6 +642,12 @@ Setelah selesai, muat ulang aplikasi dan coba upload kembali.
 Jika muncul pesan bahwa tabel `payment_reminders` tidak ditemukan, jalankan
 `supabase/migrations/20260607_add_payment_reminders.sql` melalui Supabase SQL
 Editor. Migration juga memuat ulang schema PostgREST.
+
+### Budget rentang tanggal gagal dimuat
+
+Jika muncul pesan bahwa kolom `budgets.start_date` atau `budgets.end_date` tidak
+ditemukan, jalankan `supabase/migrations/20260607_update_budget_date_range.sql`
+melalui Supabase SQL Editor.
 
 ## Dokumentasi Tambahan
 

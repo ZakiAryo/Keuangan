@@ -49,11 +49,10 @@ export interface Budget {
   id: string;
   category_id: string;
   month: string;
+  start_date: string;
+  end_date: string;
   amount: number;
-  category?: Pick<
-    Category,
-    "id" | "name" | "color" | "payment_method"
-  > | null;
+  category?: Pick<Category, "id" | "name" | "color" | "type"> | null;
   spent?: number;
   created_at: string;
   updated_at: string;

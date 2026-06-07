@@ -76,6 +76,10 @@ jatuh tempo hari ini, hijau untuk tagihan lunas, dan warna netral untuk tagihan
 yang masih akan datang. Navigasi mobile dapat digeser horizontal agar seluruh
 menu tetap memiliki area sentuh yang nyaman.
 
+Form budget memakai tanggal awal dan tanggal akhir, bukan input bulan. Opsi
+kategori budget digabung berdasarkan nama kategori sehingga Cash dan Non-Cash
+tidak tampil sebagai pilihan terpisah.
+
 ### Button
 
 - `primary`: simpan atau aksi utama.

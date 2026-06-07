@@ -70,6 +70,15 @@ supabase/migrations/20260607_add_payment_reminders.sql
 Migration membuat tabel reminder, index jatuh tempo, trigger `updated_at`, dan
 memperbarui fungsi restore agar backup lama tetap dapat dipakai.
 
+Untuk database lama yang masih memakai budget bulanan, jalankan:
+
+```text
+supabase/migrations/20260607_update_budget_date_range.sql
+```
+
+Migration menambahkan `start_date` dan `end_date`, mengubah budget lama menjadi
+rentang satu bulan, dan memperbarui fungsi restore.
+
 Panduan database lengkap tersedia di [DATABASE.md](DATABASE.md).
 
 ## Setup `.env.local`

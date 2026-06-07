@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/client-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   ActionButton,
   EmptyState,
@@ -13,7 +14,8 @@ import {
 } from "@/components/ui";
 import type { Budget, Category } from "@/types/finance";
 
-const currentMonth = new Date().toISOString().slice(0, 7);
+const defaultStartDate = format(startOfMonth(new Date()), "yyyy-MM-dd");
+const defaultEndDate = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
 export function BudgetsView({
   budgets,
@@ -28,9 +30,18 @@ export function BudgetsView({
 }) {
   const [form, setForm] = useState({
     category_id: "",
-    month: currentMonth,
+    start_date: defaultStartDate,
+    end_date: defaultEndDate,
     amount: "",
   });
+  const expenseCategories = Array.from(
+    new Map(
+      categories
+        .filter((category) => category.type === "expense")
+        .sort((left, right) => left.name.localeCompare(right.name))
+        .map((category) => [category.name.toLowerCase(), category]),
+    ).values(),
+  );
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -39,7 +50,8 @@ export function BudgetsView({
         method: "POST",
         body: JSON.stringify({
           category_id: form.category_id,
-          month: `${form.month}-01`,
+          start_date: form.start_date,
+          end_date: form.end_date,
           amount: Number(form.amount),
         }),
       });
@@ -47,7 +59,10 @@ export function BudgetsView({
       setForm({ ...form, category_id: "", amount: "" });
       await refresh();
     } catch (error) {
-      notify(error instanceof Error ? error.message : "Gagal menyimpan budget.", true);
+      notify(
+        error instanceof Error ? error.message : "Gagal menyimpan budget.",
+        true,
+      );
     }
   }
 
@@ -66,11 +81,11 @@ export function BudgetsView({
     <>
       <SectionHeader
         eyebrow="Kontrol pengeluaran"
-        title="Budget bulanan"
-        description="Tetapkan batas per kategori pengeluaran. Menyimpan kategori dan bulan yang sama akan memperbarui budget sebelumnya."
+        title="Budget periode"
+        description="Tetapkan batas pengeluaran per kategori pada rentang tanggal tertentu. Cash dan Non-Cash dihitung akumulasi berdasarkan nama kategori."
       />
       <form className="panel p-5" onSubmit={submit}>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SelectField
             label="Kategori pengeluaran"
             value={form.category_id}
@@ -80,20 +95,28 @@ export function BudgetsView({
             required
           >
             <option value="">Pilih kategori</option>
-            {categories
-              .filter((category) => category.type === "expense")
-              .map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name} ·{" "}
-                  {category.payment_method === "cash" ? "Cash" : "Non-Cash"}
-                </option>
-              ))}
+            {expenseCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
           </SelectField>
           <Field
-            label="Bulan"
-            type="month"
-            value={form.month}
-            onChange={(event) => setForm({ ...form, month: event.target.value })}
+            label="Dari tanggal"
+            type="date"
+            value={form.start_date}
+            onChange={(event) =>
+              setForm({ ...form, start_date: event.target.value })
+            }
+            required
+          />
+          <Field
+            label="Sampai tanggal"
+            type="date"
+            value={form.end_date}
+            onChange={(event) =>
+              setForm({ ...form, end_date: event.target.value })
+            }
             required
           />
           <Field
@@ -121,15 +144,16 @@ export function BudgetsView({
               const amount = Number(budget.amount);
               const percentage = amount ? (spent / amount) * 100 : 0;
               return (
-                <article className="rounded-xl border border-line p-4" key={budget.id}>
+                <article
+                  className="rounded-xl border border-line p-4"
+                  key={budget.id}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium">{budget.category?.name}</p>
                       <p className="mt-1 text-xs text-muted">
-                        {new Intl.DateTimeFormat("id-ID", {
-                          month: "long",
-                          year: "numeric",
-                        }).format(new Date(budget.month))}
+                        {formatDate(budget.start_date)} -{" "}
+                        {formatDate(budget.end_date)}
                       </p>
                     </div>
                     <ActionButton

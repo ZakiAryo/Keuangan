@@ -33,6 +33,8 @@ erDiagram
     uuid id PK
     uuid category_id FK
     date month
+    date start_date
+    date end_date
     numeric amount
   }
   WALLET_TRANSFERS {
@@ -74,8 +76,9 @@ privat `transaction-attachments`.
 
 ### `budgets`
 
-Menyimpan batas bulanan per kategori. `month` selalu tanggal pertama bulan dan
-kombinasi kategori-bulan unik.
+Menyimpan batas pengeluaran per kategori pada rentang tanggal bebas. Kolom
+`month` masih disimpan sebagai legacy untuk kompatibilitas backup lama, tetapi
+perhitungan memakai `start_date` dan `end_date`.
 
 ### `wallet_transfers`
 
@@ -111,8 +114,10 @@ materialized view, atau ledger.
 
 Nilai `spent` dihitung dari transaksi `expense` dengan:
 
-- `category_id` yang sama.
-- Bulan `transaction_date` yang sama dengan `budgets.month`.
+- `transaction_date` berada di antara `budgets.start_date` dan
+  `budgets.end_date`.
+- Nama kategori transaksi sama dengan nama kategori budget.
+- Cash dan Non-Cash tidak dipisah karena budget menghitung akumulasi kategori.
 
 Transfer antar wallet tidak mengurangi budget karena bukan pengeluaran
 konsumtif.
@@ -188,11 +193,15 @@ on conflict (id) do update set
 create table if not exists public.budgets (
   id uuid primary key default gen_random_uuid(),
   category_id uuid not null references public.categories(id) on delete cascade,
-  month date not null check (date_trunc('month', month)::date = month),
+  month date not null default date_trunc('month', current_date)::date
+    check (date_trunc('month', month)::date = month),
+  start_date date not null default current_date,
+  end_date date not null default current_date,
   amount numeric(18,2) not null check (amount > 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (category_id, month)
+  check (start_date <= end_date),
+  unique (category_id, start_date, end_date)
 );
 
 create table if not exists public.wallet_transfers (
@@ -233,6 +242,8 @@ create index if not exists transactions_category_idx
   on public.transactions (category_id);
 create index if not exists budgets_month_idx
   on public.budgets (month);
+create index if not exists budgets_date_range_idx
+  on public.budgets (start_date, end_date);
 create index if not exists wallet_transfers_date_idx
   on public.wallet_transfers (transfer_date desc);
 create index if not exists payment_reminders_status_due_date_idx
@@ -342,13 +353,21 @@ begin
     );
 
   insert into budgets (
-    id, category_id, month, amount, created_at, updated_at
+    id, category_id, month, start_date, end_date, amount, created_at, updated_at
   )
-  select id, category_id, month, amount, created_at, updated_at
+  select id, category_id,
+    coalesce(month, date_trunc('month', coalesce(start_date, current_date))::date),
+    coalesce(start_date, month, current_date),
+    coalesce(
+      end_date,
+      (date_trunc('month', coalesce(month, start_date, current_date)) +
+        interval '1 month - 1 day')::date
+    ),
+    amount, created_at, updated_at
   from jsonb_to_recordset(payload #> '{data,budgets}')
     as x(
-      id uuid, category_id uuid, month date, amount numeric,
-      created_at timestamptz, updated_at timestamptz
+      id uuid, category_id uuid, month date, start_date date, end_date date,
+      amount numeric, created_at timestamptz, updated_at timestamptz
     );
 
   insert into wallet_transfers (
