@@ -15,7 +15,13 @@ export async function GET(request: NextRequest) {
     const to = dateSchema.parse(
       request.nextUrl.searchParams.get("to") ?? format(new Date(), "yyyy-MM-dd"),
     );
-    return NextResponse.json({ data: await getReportData(from, to) });
+    const paymentMethod = z
+      .enum(["cash", "non_cash"])
+      .optional()
+      .parse(request.nextUrl.searchParams.get("payment_method") ?? undefined);
+    return NextResponse.json({
+      data: await getReportData(from, to, paymentMethod),
+    });
   } catch (error) {
     return handleApiError(error);
   }

@@ -238,6 +238,10 @@ export function DashboardView({ data }: { data: DashboardData | null }) {
                     </p>
                     <p className="mt-1 text-xs text-muted">
                       {transaction.category?.name} ·{" "}
+                      {transaction.category?.payment_method === "cash"
+                        ? "Cash"
+                        : "Non-Cash"}{" "}
+                      ·{" "}
                       {formatDate(transaction.transaction_date)}
                     </p>
                   </div>

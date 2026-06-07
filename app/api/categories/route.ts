@@ -14,6 +14,7 @@ export async function GET() {
       .from("categories")
       .select("*")
       .order("type")
+      .order("payment_method")
       .order("name");
     assertSupabaseResult(result, "Gagal mengambil kategori.");
     return NextResponse.json({ data: result.data ?? [] });

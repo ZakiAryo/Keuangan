@@ -10,7 +10,7 @@ import { parseJson, transactionSchema } from "@/lib/validation";
 
 type Context = { params: Promise<{ id: string }> };
 const select =
-  "*, category:categories(id,name,color,type), wallet:wallets(id,name,color)";
+  "*, category:categories(id,name,color,type,payment_method), wallet:wallets(id,name,color)";
 
 export async function PUT(request: Request, context: Context) {
   try {

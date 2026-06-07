@@ -1,9 +1,11 @@
 export type TransactionType = "income" | "expense";
+export type PaymentMethod = "cash" | "non_cash";
 
 export interface Category {
   id: string;
   name: string;
   type: TransactionType;
+  payment_method: PaymentMethod;
   color: string;
   icon: string | null;
   created_at: string;
@@ -30,7 +32,10 @@ export interface Transaction {
   notes: string | null;
   category_id: string;
   wallet_id: string;
-  category?: Pick<Category, "id" | "name" | "color" | "type"> | null;
+  category?: Pick<
+    Category,
+    "id" | "name" | "color" | "type" | "payment_method"
+  > | null;
   wallet?: Pick<Wallet, "id" | "name" | "color"> | null;
   created_at: string;
   updated_at: string;
@@ -41,7 +46,10 @@ export interface Budget {
   category_id: string;
   month: string;
   amount: number;
-  category?: Pick<Category, "id" | "name" | "color"> | null;
+  category?: Pick<
+    Category,
+    "id" | "name" | "color" | "payment_method"
+  > | null;
   spent?: number;
   created_at: string;
   updated_at: string;
@@ -83,6 +91,7 @@ export interface ReportData {
     name: string;
     color: string;
     type: TransactionType;
+    paymentMethod: PaymentMethod;
     total: number;
   }>;
   monthly: Array<{ month: string; income: number; expense: number; net: number }>;

@@ -14,6 +14,10 @@ npm run build
 
 4. Commit source code dan push.
 
+Jika deployment memakai database lama, jalankan migration
+`supabase/migrations/20260607_add_category_payment_method.sql` di SQL Editor
+Supabase sebelum deployment baru dipromosikan ke production.
+
 ```bash
 git add .
 git commit -m "Create personal finance tracker"
@@ -58,11 +62,13 @@ bandingkan dengan hasil `npm run build` lokal.
 - PIN benar mengarahkan pengguna ke dashboard.
 - Cookie session memiliki flag `HttpOnly`, `Secure`, dan `SameSite=Lax`.
 - Kategori dapat dibuat.
+- Kategori dapat diklasifikasikan sebagai Cash atau Non-Cash.
 - Wallet dapat dibuat.
 - Transaksi dapat dibuat dan saldo berubah.
 - Transfer memengaruhi wallet asal dan tujuan.
 - Budget menampilkan pemakaian.
 - Laporan dan export CSV bekerja.
+- Filter Cash/Non-Cash bekerja pada transaksi, laporan, dan CSV.
 - Backup JSON dapat diunduh.
 - Logout menghapus session.
 

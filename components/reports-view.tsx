@@ -14,7 +14,13 @@ import {
 } from "recharts";
 import { apiRequest } from "@/lib/client-api";
 import { formatCurrency } from "@/lib/utils";
-import { ActionButton, EmptyState, Field, SectionHeader } from "@/components/ui";
+import {
+  ActionButton,
+  EmptyState,
+  Field,
+  SectionHeader,
+  SelectField,
+} from "@/components/ui";
 import type { ReportData } from "@/types/finance";
 
 const year = new Date().getFullYear();
@@ -26,6 +32,7 @@ export function ReportsView({
 }) {
   const [from, setFrom] = useState(`${year}-01-01`);
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
+  const [paymentMethod, setPaymentMethod] = useState("all");
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +40,11 @@ export function ReportsView({
     setLoading(true);
     try {
       const result = await apiRequest<{ data: ReportData }>(
-        `/api/reports?from=${from}&to=${to}`,
+        `/api/reports?from=${from}&to=${to}${
+          paymentMethod === "all"
+            ? ""
+            : `&payment_method=${paymentMethod}`
+        }`,
       );
       setReport(result.data);
     } catch (error) {
@@ -57,7 +68,7 @@ export function ReportsView({
         description="Tinjau pemasukan, pengeluaran, hasil bersih, serta komposisi kategori pada periode pilihan."
       />
       <section className="panel p-5">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto]">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto_auto]">
           <Field
             label="Dari"
             type="date"
@@ -70,6 +81,15 @@ export function ReportsView({
             value={to}
             onChange={(event) => setTo(event.target.value)}
           />
+          <SelectField
+            label="Metode pembayaran"
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value)}
+          >
+            <option value="all">Cash & Non-Cash</option>
+            <option value="cash">Cash</option>
+            <option value="non_cash">Non-Cash</option>
+          </SelectField>
           <ActionButton
             className="self-end"
             variant="primary"
@@ -80,7 +100,11 @@ export function ReportsView({
           </ActionButton>
           <a
             className="btn-secondary self-end"
-            href={`/api/export/csv?from=${from}&to=${to}`}
+            href={`/api/export/csv?from=${from}&to=${to}${
+              paymentMethod === "all"
+                ? ""
+                : `&payment_method=${paymentMethod}`
+            }`}
           >
             <Download size={16} /> Export CSV
           </a>
@@ -148,7 +172,15 @@ export function ReportsView({
                         />
                         <div>
                           <p className="text-sm font-medium">{category.name}</p>
-                          <p className="text-xs capitalize text-muted">{category.type}</p>
+                          <p className="text-xs text-muted">
+                            {category.type === "income"
+                              ? "Pemasukan"
+                              : "Pengeluaran"}
+                            {" · "}
+                            {category.paymentMethod === "cash"
+                              ? "Cash"
+                              : "Non-Cash"}
+                          </p>
                         </div>
                       </div>
                       <p className="text-sm font-semibold">

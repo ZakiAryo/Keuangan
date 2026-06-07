@@ -16,6 +16,7 @@ import type { Category, Wallet } from "@/types/finance";
 const categoryEmpty = {
   name: "",
   type: "expense" as "income" | "expense",
+  payment_method: "non_cash" as "cash" | "non_cash",
   color: "#70e1b0",
   icon: "",
 };
@@ -143,6 +144,19 @@ export function MasterDataView({
               <option value="expense">Pengeluaran</option>
               <option value="income">Pemasukan</option>
             </SelectField>
+            <SelectField
+              label="Metode pembayaran"
+              value={category.payment_method}
+              onChange={(event) =>
+                setCategory({
+                  ...category,
+                  payment_method: event.target.value as "cash" | "non_cash",
+                })
+              }
+            >
+              <option value="cash">Cash</option>
+              <option value="non_cash">Non-Cash</option>
+            </SelectField>
             <Field
               label="Warna"
               type="color"
@@ -244,7 +258,11 @@ export function MasterDataView({
                     />
                     <div>
                       <p className="text-sm font-medium">{item.name}</p>
-                      <p className="text-xs capitalize text-muted">{item.type}</p>
+                      <p className="text-xs text-muted">
+                        {item.type === "income" ? "Pemasukan" : "Pengeluaran"}
+                        {" · "}
+                        {item.payment_method === "cash" ? "Cash" : "Non-Cash"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -254,6 +272,7 @@ export function MasterDataView({
                         setCategory({
                           name: item.name,
                           type: item.type,
+                          payment_method: item.payment_method,
                           color: item.color,
                           icon: item.icon ?? "",
                         });

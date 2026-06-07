@@ -4,12 +4,48 @@ create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 1 and 80),
   type text not null check (type in ('income', 'expense')),
+  payment_method text not null default 'non_cash'
+    check (payment_method in ('cash', 'non_cash')),
   color text not null default '#70e1b0',
   icon text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (name, type)
+  unique (name, type, payment_method)
 );
+
+alter table public.categories
+  add column if not exists payment_method text not null default 'non_cash';
+
+do $migration$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'categories_payment_method_check'
+  ) then
+    alter table public.categories
+      add constraint categories_payment_method_check
+      check (payment_method in ('cash', 'non_cash'));
+  end if;
+end
+$migration$;
+
+alter table public.categories
+  drop constraint if exists categories_name_type_key;
+
+do $migration$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'categories_name_type_payment_method_key'
+  ) then
+    alter table public.categories
+      add constraint categories_name_type_payment_method_key
+      unique (name, type, payment_method);
+  end if;
+end
+$migration$;
 
 create table if not exists public.wallets (
   id uuid primary key default gen_random_uuid(),
@@ -129,10 +165,16 @@ begin
   delete from wallets;
   delete from categories;
 
-  insert into categories (id, name, type, color, icon, created_at, updated_at)
-  select id, name, type, color, icon, created_at, updated_at
+  insert into categories (
+    id, name, type, payment_method, color, icon, created_at, updated_at
+  )
+  select id, name, type, coalesce(payment_method, 'non_cash'),
+    color, icon, created_at, updated_at
   from jsonb_to_recordset(payload #> '{data,categories}')
-    as x(id uuid, name text, type text, color text, icon text, created_at timestamptz, updated_at timestamptz);
+    as x(
+      id uuid, name text, type text, payment_method text, color text, icon text,
+      created_at timestamptz, updated_at timestamptz
+    );
 
   insert into wallets (id, name, type, initial_balance, color, created_at, updated_at)
   select id, name, type, initial_balance, color, created_at, updated_at

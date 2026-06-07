@@ -84,7 +84,8 @@ export function BudgetsView({
               .filter((category) => category.type === "expense")
               .map((category) => (
                 <option key={category.id} value={category.id}>
-                  {category.name}
+                  {category.name} ·{" "}
+                  {category.payment_method === "cash" ? "Cash" : "Non-Cash"}
                 </option>
               ))}
           </SelectField>

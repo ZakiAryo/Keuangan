@@ -20,7 +20,7 @@ export async function PUT(request: Request, context: Context) {
       .from("budgets")
       .update(payload)
       .eq("id", id)
-      .select("*, category:categories(id,name,color,type)")
+      .select("*, category:categories(id,name,color,type,payment_method)")
       .single();
     assertSupabaseResult(result, "Gagal memperbarui budget.");
     return NextResponse.json({ data: result.data });

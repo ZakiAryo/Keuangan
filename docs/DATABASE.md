@@ -17,6 +17,7 @@ erDiagram
     uuid id PK
     text name
     text type
+    text payment_method
   }
   WALLETS {
     uuid id PK
@@ -47,8 +48,10 @@ erDiagram
 
 ### `categories`
 
-Menyimpan kategori transaksi. `type` bernilai `income` atau `expense`.
-Kombinasi nama dan tipe harus unik.
+Menyimpan kategori transaksi. `type` bernilai `income` atau `expense`, sedangkan
+`payment_method` bernilai `cash` atau `non_cash`. Kombinasi nama, tipe, dan
+metode pembayaran harus unik sehingga nama kategori yang sama dapat tersedia
+untuk Cash dan Non-Cash.
 
 ### `wallets`
 
@@ -109,11 +112,13 @@ create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 1 and 80),
   type text not null check (type in ('income', 'expense')),
+  payment_method text not null default 'non_cash'
+    check (payment_method in ('cash', 'non_cash')),
   color text not null default '#70e1b0',
   icon text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (name, type)
+  unique (name, type, payment_method)
 );
 
 create table if not exists public.wallets (
@@ -231,11 +236,14 @@ begin
   delete from wallets;
   delete from categories;
 
-  insert into categories (id, name, type, color, icon, created_at, updated_at)
-  select id, name, type, color, icon, created_at, updated_at
+  insert into categories (
+    id, name, type, payment_method, color, icon, created_at, updated_at
+  )
+  select id, name, type, coalesce(payment_method, 'non_cash'),
+    color, icon, created_at, updated_at
   from jsonb_to_recordset(payload #> '{data,categories}')
     as x(
-      id uuid, name text, type text, color text, icon text,
+      id uuid, name text, type text, payment_method text, color text, icon text,
       created_at timestamptz, updated_at timestamptz
     );
 
@@ -315,3 +323,8 @@ Jika schema berubah:
 4. Perbarui validasi Zod.
 5. Perbarui backup version jika format tidak backward-compatible.
 6. Jalankan typecheck, lint, dan build.
+
+Migration penambahan klasifikasi pembayaran tersedia di
+`supabase/migrations/20260607_add_category_payment_method.sql`. Kategori lama
+diberi default `non_cash`, dan fungsi restore tetap menerima backup versi lama
+yang belum memiliki field `payment_method`.

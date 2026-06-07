@@ -8,6 +8,7 @@ const date = z.string().date();
 export const categorySchema = z.object({
   name: z.string().trim().min(1).max(80),
   type: z.enum(["income", "expense"]),
+  payment_method: z.enum(["cash", "non_cash"]).default("non_cash"),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#70e1b0"),
   icon: z.string().trim().max(40).nullable().optional(),
 });

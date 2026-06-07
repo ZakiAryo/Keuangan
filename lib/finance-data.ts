@@ -12,7 +12,7 @@ import type {
 } from "@/types/finance";
 
 const transactionSelect =
-  "*, category:categories(id,name,color,type), wallet:wallets(id,name,color)";
+  "*, category:categories(id,name,color,type,payment_method), wallet:wallets(id,name,color)";
 const transferSelect =
   "*, from_wallet:wallets!wallet_transfers_from_wallet_id_fkey(id,name,color), to_wallet:wallets!wallet_transfers_to_wallet_id_fkey(id,name,color)";
 
@@ -72,7 +72,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       supabase.from("wallets").select("*").order("created_at"),
       supabase
         .from("budgets")
-        .select("*, category:categories(id,name,color)")
+        .select("*, category:categories(id,name,color,payment_method)")
         .eq("month", format(startOfMonth(new Date()), "yyyy-MM-dd")),
       fetchTransactions(),
       fetchTransfers(),
@@ -163,7 +163,11 @@ export async function getDashboardData(): Promise<DashboardData> {
   };
 }
 
-export async function getReportData(from: string, to: string): Promise<ReportData> {
+export async function getReportData(
+  from: string,
+  to: string,
+  paymentMethod?: "cash" | "non_cash",
+): Promise<ReportData> {
   if (from > to) {
     throw new ApiError(400, "Tanggal awal tidak boleh melewati tanggal akhir.");
   }
@@ -175,7 +179,11 @@ export async function getReportData(from: string, to: string): Promise<ReportDat
     .lte("transaction_date", to)
     .order("transaction_date");
   assertSupabaseResult(result, "Gagal mengambil laporan.");
-  const transactions = (result.data ?? []) as unknown as Transaction[];
+  const transactions = ((result.data ?? []) as unknown as Transaction[]).filter(
+    (transaction) =>
+      !paymentMethod ||
+      transaction.category?.payment_method === paymentMethod,
+  );
 
   const income = transactions
     .filter((item) => item.type === "income")
@@ -197,6 +205,7 @@ export async function getReportData(from: string, to: string): Promise<ReportDat
       name: transaction.category?.name ?? "Tanpa kategori",
       color: transaction.category?.color ?? "#8b9bb0",
       type: transaction.type,
+      paymentMethod: transaction.category?.payment_method ?? "non_cash",
       total: (category?.total ?? 0) + toNumber(transaction.amount),
     });
 

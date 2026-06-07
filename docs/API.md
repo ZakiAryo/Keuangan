@@ -130,6 +130,7 @@ Query params opsional:
 | `type` | `income` atau `expense` | Filter tipe |
 | `wallet_id` | UUID | Filter wallet |
 | `category_id` | UUID | Filter kategori |
+| `payment_method` | `cash` atau `non_cash` | Filter metode kategori |
 | `limit` | number, maksimum 1000 | Jumlah data |
 
 Contoh:
@@ -156,7 +157,8 @@ Response:
         "id": "uuid",
         "name": "Kebutuhan",
         "color": "#fb7185",
-        "type": "expense"
+        "type": "expense",
+        "payment_method": "cash"
       },
       "wallet": {
         "id": "uuid",
@@ -226,12 +228,14 @@ Request body:
 {
   "name": "Makanan",
   "type": "expense",
+  "payment_method": "cash",
   "color": "#fb7185",
   "icon": "food"
 }
 ```
 
-`icon` opsional. `color` harus berupa hex enam digit.
+`payment_method` harus `cash` atau `non_cash`. `icon` opsional dan `color`
+harus berupa hex enam digit.
 
 ### PUT `/api/categories/:id`
 
@@ -381,6 +385,7 @@ Mengambil laporan pada rentang tanggal.
 | --- | --- | --- |
 | `from` | `YYYY-MM-DD` | Awal tahun berjalan |
 | `to` | `YYYY-MM-DD` | Hari ini |
+| `payment_method` | `cash` atau `non_cash` | Semua metode |
 
 ```http
 GET /api/reports?from=2026-01-01&to=2026-06-30
@@ -420,11 +425,12 @@ Query params:
 | --- | --- | --- |
 | `from` | `YYYY-MM-DD` | `2000-01-01` |
 | `to` | `YYYY-MM-DD` | `2999-12-31` |
+| `payment_method` | `cash` atau `non_cash` | Semua metode |
 
 Kolom:
 
 ```text
-Tanggal,Tipe,Deskripsi,Kategori,Wallet,Jumlah,Catatan
+Tanggal,Tipe,Deskripsi,Kategori,Metode Pembayaran,Wallet,Jumlah,Catatan
 ```
 
 Response memiliki content type `text/csv` dan header `Content-Disposition`.

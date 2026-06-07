@@ -43,6 +43,15 @@ dan Tailwind CSS.
 4. Pastikan lima tabel dan fungsi `restore_finance_backup` berhasil dibuat.
 5. Ambil Project URL dan service role key dari **Project Settings > API**.
 
+Jika database sudah memakai versi lama tanpa klasifikasi Cash/Non-Cash, jalankan:
+
+```text
+supabase/migrations/20260607_add_category_payment_method.sql
+```
+
+Migration mempertahankan data lama dan mengklasifikasikannya sebagai
+`non_cash` sampai kategori tersebut diedit.
+
 Panduan database lengkap tersedia di [DATABASE.md](DATABASE.md).
 
 ## Setup `.env.local`
@@ -81,8 +90,8 @@ Urutan setup data awal:
 
 1. Masukkan PIN.
 2. Buka menu **Data utama**.
-3. Tambahkan minimal satu kategori pemasukan.
-4. Tambahkan minimal satu kategori pengeluaran.
+3. Tambahkan minimal satu kategori pemasukan Cash atau Non-Cash.
+4. Tambahkan minimal satu kategori pengeluaran Cash atau Non-Cash.
 5. Tambahkan minimal satu wallet.
 6. Mulai mencatat transaksi.
 

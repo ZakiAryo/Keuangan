@@ -19,6 +19,7 @@ export type Database = {
           id: string;
           name: string;
           type: "income" | "expense";
+          payment_method: "cash" | "non_cash";
           color: string;
           icon: string | null;
         };
@@ -26,6 +27,7 @@ export type Database = {
           id?: string;
           name: string;
           type: "income" | "expense";
+          payment_method?: "cash" | "non_cash";
           color?: string;
           icon?: string | null;
           created_at?: string;
@@ -35,6 +37,7 @@ export type Database = {
           id?: string;
           name?: string;
           type?: "income" | "expense";
+          payment_method?: "cash" | "non_cash";
           color?: string;
           icon?: string | null;
           created_at?: string;

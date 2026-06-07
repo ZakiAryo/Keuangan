@@ -58,6 +58,11 @@ Gunakan class `panel` untuk card utama:
 Gunakan komponen `Field`, `SelectField`, dan `TextareaField` dari
 `components/ui.tsx` agar label, warna, focus state, dan ukuran konsisten.
 
+Form kategori menyediakan klasifikasi **Cash** dan **Non-Cash**. Form transaksi
+meminta metode pembayaran lebih dahulu, lalu hanya menampilkan kategori yang
+sesuai. Riwayat transaksi dan laporan menampilkan metode sebagai label sekunder
+dan menyediakan filter metode pembayaran.
+
 ### Button
 
 - `primary`: simpan atau aksi utama.

@@ -9,7 +9,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { parseJson, transactionSchema } from "@/lib/validation";
 
 const select =
-  "*, category:categories(id,name,color,type), wallet:wallets(id,name,color)";
+  "*, category:categories!inner(id,name,color,type,payment_method), wallet:wallets(id,name,color)";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +29,10 @@ export async function GET(request: NextRequest) {
       .parse(params.get("type") ?? undefined);
     const walletId = params.get("wallet_id");
     const categoryId = params.get("category_id");
+    const paymentMethod = z
+      .enum(["cash", "non_cash"])
+      .optional()
+      .parse(params.get("payment_method") ?? undefined);
     const limit = Math.min(Number(params.get("limit") || 200), 1000);
 
     if (from) query = query.gte("transaction_date", from);
@@ -36,6 +40,9 @@ export async function GET(request: NextRequest) {
     if (type) query = query.eq("type", type);
     if (walletId) query = query.eq("wallet_id", walletId);
     if (categoryId) query = query.eq("category_id", categoryId);
+    if (paymentMethod) {
+      query = query.eq("category.payment_method", paymentMethod);
+    }
     query = query.limit(Number.isFinite(limit) ? limit : 200);
 
     const result = await query;

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const month = request.nextUrl.searchParams.get("month");
     let query = getSupabaseAdmin()
       .from("budgets")
-      .select("*, category:categories(id,name,color,type)")
+      .select("*, category:categories(id,name,color,type,payment_method)")
       .order("month", { ascending: false });
     if (month) query = query.eq("month", `${month.slice(0, 7)}-01`);
     const result = await query;
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     const result = await getSupabaseAdmin()
       .from("budgets")
       .upsert(payload, { onConflict: "category_id,month" })
-      .select("*, category:categories(id,name,color,type)")
+      .select("*, category:categories(id,name,color,type,payment_method)")
       .single();
     assertSupabaseResult(result, "Gagal menyimpan budget.");
     return NextResponse.json({ data: result.data }, { status: 201 });

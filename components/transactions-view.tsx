@@ -20,6 +20,7 @@ const emptyForm = {
   amount: "",
   description: "",
   transaction_date: today,
+  payment_method: "non_cash" as "cash" | "non_cash",
   category_id: "",
   wallet_id: "",
   notes: "",
@@ -42,15 +43,21 @@ export function TransactionsView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
   const availableCategories = categories.filter(
-    (category) => category.type === form.type,
+    (category) =>
+      category.type === form.type &&
+      category.payment_method === form.payment_method,
   );
   const visibleTransactions = useMemo(
     () =>
-      filter === "all"
-        ? transactions
-        : transactions.filter((transaction) => transaction.type === filter),
-    [filter, transactions],
+      transactions.filter(
+        (transaction) =>
+          (filter === "all" || transaction.type === filter) &&
+          (paymentFilter === "all" ||
+            transaction.category?.payment_method === paymentFilter),
+      ),
+    [filter, paymentFilter, transactions],
   );
 
   function reset() {
@@ -65,6 +72,7 @@ export function TransactionsView({
       amount: String(transaction.amount),
       description: transaction.description,
       transaction_date: transaction.transaction_date,
+      payment_method: transaction.category?.payment_method ?? "non_cash",
       category_id: transaction.category_id,
       wallet_id: transaction.wallet_id,
       notes: transaction.notes ?? "",
@@ -76,15 +84,20 @@ export function TransactionsView({
     event.preventDefault();
     setSaving(true);
     try {
+      const payload = {
+        type: form.type,
+        amount: Number(form.amount),
+        description: form.description,
+        transaction_date: form.transaction_date,
+        category_id: form.category_id,
+        wallet_id: form.wallet_id,
+        notes: form.notes || null,
+      };
       await apiRequest(
         editingId ? `/api/transactions/${editingId}` : "/api/transactions",
         {
           method: editingId ? "PUT" : "POST",
-          body: JSON.stringify({
-            ...form,
-            amount: Number(form.amount),
-            notes: form.notes || null,
-          }),
+          body: JSON.stringify(payload),
         },
       );
       notify(editingId ? "Transaksi diperbarui." : "Transaksi ditambahkan.");
@@ -170,6 +183,20 @@ export function TransactionsView({
             required
           />
           <SelectField
+            label="Metode pembayaran"
+            value={form.payment_method}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                payment_method: event.target.value as "cash" | "non_cash",
+                category_id: "",
+              })
+            }
+          >
+            <option value="cash">Cash</option>
+            <option value="non_cash">Non-Cash</option>
+          </SelectField>
+          <SelectField
             label="Kategori"
             value={form.category_id}
             onChange={(event) =>
@@ -225,15 +252,26 @@ export function TransactionsView({
       <section className="panel overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="font-semibold">Riwayat transaksi</h3>
-          <select
-            className="field h-9 w-full sm:w-44"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-          >
-            <option value="all">Semua tipe</option>
-            <option value="income">Pemasukan</option>
-            <option value="expense">Pengeluaran</option>
-          </select>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <select
+              className="field h-9 w-full sm:w-44"
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+            >
+              <option value="all">Semua tipe</option>
+              <option value="income">Pemasukan</option>
+              <option value="expense">Pengeluaran</option>
+            </select>
+            <select
+              className="field h-9 w-full sm:w-44"
+              value={paymentFilter}
+              onChange={(event) => setPaymentFilter(event.target.value)}
+            >
+              <option value="all">Cash & Non-Cash</option>
+              <option value="cash">Cash</option>
+              <option value="non_cash">Non-Cash</option>
+            </select>
+          </div>
         </div>
         {visibleTransactions.length ? (
           <>
@@ -257,6 +295,11 @@ export function TransactionsView({
                       </td>
                       <td className="px-5 py-4 text-muted">
                         {transaction.category?.name}
+                        <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                          {transaction.category?.payment_method === "cash"
+                            ? "Cash"
+                            : "Non-Cash"}
+                        </span>
                       </td>
                       <td className="px-5 py-4 text-muted">
                         {transaction.wallet?.name}
@@ -305,7 +348,11 @@ export function TransactionsView({
                         {transaction.description}
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        {transaction.category?.name} · {transaction.wallet?.name}
+                        {transaction.category?.name} ·{" "}
+                        {transaction.category?.payment_method === "cash"
+                          ? "Cash"
+                          : "Non-Cash"}{" "}
+                        · {transaction.wallet?.name}
                       </p>
                     </div>
                     <p

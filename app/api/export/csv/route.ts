@@ -14,31 +14,52 @@ export async function GET(request: NextRequest) {
     await requirePinSession();
     const from = request.nextUrl.searchParams.get("from") ?? "2000-01-01";
     const to = request.nextUrl.searchParams.get("to") ?? "2999-12-31";
-    await getReportData(from, to);
+    const paymentMethod = request.nextUrl.searchParams.get("payment_method");
+    await getReportData(
+      from,
+      to,
+      paymentMethod === "cash" || paymentMethod === "non_cash"
+        ? paymentMethod
+        : undefined,
+    );
 
     const result = await getSupabaseAdmin()
       .from("transactions")
-      .select("*, category:categories(name), wallet:wallets(name)")
+      .select("*, category:categories(name,payment_method), wallet:wallets(name)")
       .gte("transaction_date", from)
       .lte("transaction_date", to)
       .order("transaction_date", { ascending: false });
     assertSupabaseResult(result, "Gagal mengekspor CSV.");
 
+    const data = (result.data ?? []).filter((item) => {
+      if (paymentMethod !== "cash" && paymentMethod !== "non_cash") return true;
+      return (
+        (
+          item.category as unknown as { payment_method?: string } | null
+        )?.payment_method === paymentMethod
+      );
+    });
     const rows = [
       [
         "Tanggal",
         "Tipe",
         "Deskripsi",
         "Kategori",
+        "Metode Pembayaran",
         "Wallet",
         "Jumlah",
         "Catatan",
       ],
-      ...(result.data ?? []).map((item) => [
+      ...data.map((item) => [
         item.transaction_date,
         item.type,
         item.description,
         (item.category as unknown as { name?: string } | null)?.name ?? "",
+        (
+          item.category as unknown as { payment_method?: string } | null
+        )?.payment_method === "cash"
+          ? "Cash"
+          : "Non-Cash",
         (item.wallet as unknown as { name?: string } | null)?.name ?? "",
         item.amount,
         item.notes ?? "",

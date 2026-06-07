@@ -13,7 +13,8 @@ privat, responsif, dan mudah dipasang di Vercel dengan database Supabase.
 - **PIN Gate tanpa login/register** dengan session cookie HTTP-only bertanda tangan.
 - **Dashboard keuangan** untuk saldo, pemasukan, pengeluaran, budget, dan chart.
 - **Manajemen transaksi** pemasukan dan pengeluaran lengkap dengan edit/hapus.
-- **Manajemen kategori** berdasarkan tipe pemasukan atau pengeluaran.
+- **Manajemen kategori** berdasarkan tipe pemasukan/pengeluaran dan metode
+  pembayaran Cash/Non-Cash.
 - **Manajemen wallet/dompet** dengan saldo awal dan saldo berjalan.
 - **Transfer antar wallet** termasuk biaya transfer.
 - **Budget bulanan** per kategori dan indikator pemakaian.
@@ -133,6 +134,10 @@ openssl rand -base64 48
 7. Salin **service_role key** ke `SUPABASE_SERVICE_ROLE_KEY`.
 8. Masukkan variable yang sama ke Vercel saat deployment.
 
+Untuk database yang sudah dibuat dengan schema versi sebelumnya, jalankan
+[`supabase/migrations/20260607_add_category_payment_method.sql`](supabase/migrations/20260607_add_category_payment_method.sql)
+agar kategori lama mendapat nilai default `non_cash`.
+
 RLS diaktifkan tanpa policy publik. Semua akses data dilakukan oleh route server
 menggunakan service role key setelah session PIN diverifikasi.
 
@@ -148,11 +153,13 @@ create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 1 and 80),
   type text not null check (type in ('income', 'expense')),
+  payment_method text not null default 'non_cash'
+    check (payment_method in ('cash', 'non_cash')),
   color text not null default '#70e1b0',
   icon text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (name, type)
+  unique (name, type, payment_method)
 );
 
 create table if not exists public.wallets (
@@ -264,11 +271,14 @@ begin
   delete from wallets;
   delete from categories;
 
-  insert into categories (id, name, type, color, icon, created_at, updated_at)
-  select id, name, type, color, icon, created_at, updated_at
+  insert into categories (
+    id, name, type, payment_method, color, icon, created_at, updated_at
+  )
+  select id, name, type, coalesce(payment_method, 'non_cash'),
+    color, icon, created_at, updated_at
   from jsonb_to_recordset(payload #> '{data,categories}')
-    as x(id uuid, name text, type text, color text, icon text,
-      created_at timestamptz, updated_at timestamptz);
+    as x(id uuid, name text, type text, payment_method text, color text,
+      icon text, created_at timestamptz, updated_at timestamptz);
 
   insert into wallets (id, name, type, initial_balance, color, created_at, updated_at)
   select id, name, type, initial_balance, color, created_at, updated_at
@@ -355,10 +365,11 @@ Detail lengkap tersedia di [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 ## Cara Menggunakan Aplikasi
 
 1. Buka aplikasi dan masukkan PIN.
-2. Buka **Data utama**, lalu tambahkan kategori pemasukan/pengeluaran.
+2. Buka **Data utama**, lalu tambahkan kategori pemasukan/pengeluaran dengan
+   metode Cash atau Non-Cash.
 3. Tambahkan wallet seperti rekening bank, cash, atau e-wallet.
-4. Catat pemasukan pertama.
-5. Catat pengeluaran harian.
+4. Catat pemasukan pertama dan pilih metode pembayaran.
+5. Catat pengeluaran harian sebagai Cash atau Non-Cash.
 6. Pantau saldo dan grafik pada dashboard.
 7. Buat budget bulanan per kategori pengeluaran.
 8. Buka laporan dan pilih rentang tanggal.
@@ -377,7 +388,7 @@ memanggil `requirePinSession()`.
 | GET | `/api/dashboard` | Ringkasan dashboard dan chart |
 | GET, POST | `/api/transactions` | Daftar/filter dan tambah transaksi |
 | PUT, DELETE | `/api/transactions/:id` | Ubah atau hapus transaksi |
-| GET, POST | `/api/categories` | Daftar dan tambah kategori |
+| GET, POST | `/api/categories` | Daftar dan tambah kategori Cash/Non-Cash |
 | PUT, DELETE | `/api/categories/:id` | Ubah atau hapus kategori |
 | GET, POST | `/api/wallets` | Daftar wallet beserta saldo dan tambah wallet |
 | PUT, DELETE | `/api/wallets/:id` | Ubah atau hapus wallet |
