@@ -63,6 +63,11 @@ meminta metode pembayaran lebih dahulu, lalu hanya menampilkan kategori yang
 sesuai. Riwayat transaksi dan laporan menampilkan metode sebagai label sekunder
 dan menyediakan filter metode pembayaran.
 
+Form transaksi juga menyediakan drop area lampiran opsional. Tombol detail pada
+setiap transaksi membuka dialog berisi informasi lengkap, preview gambar/PDF,
+unduh, hapus lampiran, dan shortcut edit. Daftar kategori memiliki sorting nama,
+tipe, metode pembayaran, serta waktu pembuatan.
+
 ### Button
 
 - `primary`: simpan atau aksi utama.

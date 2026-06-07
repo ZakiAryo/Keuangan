@@ -81,6 +81,10 @@ export type Database = {
           description: string;
           transaction_date: string;
           notes: string | null;
+          attachment_path: string | null;
+          attachment_name: string | null;
+          attachment_type: string | null;
+          attachment_size: number | null;
           category_id: string;
           wallet_id: string;
         };
@@ -91,6 +95,10 @@ export type Database = {
           description: string;
           transaction_date?: string;
           notes?: string | null;
+          attachment_path?: string | null;
+          attachment_name?: string | null;
+          attachment_type?: string | null;
+          attachment_size?: number | null;
           category_id: string;
           wallet_id: string;
           created_at?: string;
@@ -103,6 +111,10 @@ export type Database = {
           description?: string;
           transaction_date?: string;
           notes?: string | null;
+          attachment_path?: string | null;
+          attachment_name?: string | null;
+          attachment_type?: string | null;
+          attachment_size?: number | null;
           category_id?: string;
           wallet_id?: string;
           created_at?: string;

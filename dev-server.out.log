@@ -10,3 +10,9 @@
    Reload env: .env.local
    Reload env: .env.local
    Reload env: .env.local
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 3.9s (116 modules)
+ ○ Compiling /pin ...
+ ✓ Compiled /pin in 14s (567 modules)
+ GET /pin 200 in 17092ms
+ ✓ Compiled in 633ms (239 modules)

@@ -30,6 +30,10 @@ export interface Transaction {
   description: string;
   transaction_date: string;
   notes: string | null;
+  attachment_path: string | null;
+  attachment_name: string | null;
+  attachment_type: string | null;
+  attachment_size: number | null;
   category_id: string;
   wallet_id: string;
   category?: Pick<

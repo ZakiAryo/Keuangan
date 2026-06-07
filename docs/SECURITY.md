@@ -35,14 +35,16 @@ Siapa pun yang mengetahui URL dan PIN memiliki akses ke seluruh data.
 Secret hanya disimpan pada environment variable:
 
 ```env
+NEXT_PUBLIC_SUPABASE_ANON_KEY=browser_safe
 SUPABASE_SERVICE_ROLE_KEY=server_only
 APP_PIN=server_only
 PIN_SESSION_SECRET=server_only
 ```
 
-`NEXT_PUBLIC_SUPABASE_URL` boleh tersedia di browser karena bukan credential.
-Namun aplikasi saat ini tetap memakai URL tersebut hanya ketika membuat client
-server.
+`NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` boleh tersedia
+di browser. Anon key tidak memberi akses langsung ke bucket privat karena tidak
+ada policy upload publik; browser hanya dapat upload memakai token signed yang
+diterbitkan server setelah session PIN diverifikasi.
 
 Jangan:
 
@@ -70,6 +72,12 @@ mengakses tabel langsung.
 
 Service role melewati RLS, sehingga key tersebut memiliki hak tinggi. Key hanya
 boleh digunakan pada server route.
+
+Bucket `transaction-attachments` bersifat privat. Browser tidak menerima public
+URL atau service role key; file dibaca melalui route API setelah session PIN
+diverifikasi. Upload dibatasi 10 MB dan server memvalidasi MIME serta signature
+JPEG, PNG, WebP, atau PDF. Nama file asli hanya disimpan sebagai label, sedangkan
+object path memakai UUID acak.
 
 RPC restore:
 

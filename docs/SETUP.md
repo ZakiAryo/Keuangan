@@ -52,6 +52,15 @@ supabase/migrations/20260607_add_category_payment_method.sql
 Migration mempertahankan data lama dan mengklasifikasikannya sebagai
 `non_cash` sampai kategori tersebut diedit.
 
+Untuk database lama yang belum mendukung upload struk, jalankan:
+
+```text
+supabase/migrations/20260607_add_transaction_attachments.sql
+```
+
+Migration membuat kolom metadata lampiran dan bucket Storage privat
+`transaction-attachments`.
+
 Panduan database lengkap tersedia di [DATABASE.md](DATABASE.md).
 
 ## Setup `.env.local`
@@ -60,6 +69,7 @@ Salin format dari `.env.example` ke file `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 APP_PIN=123456
 PIN_SESSION_SECRET=replace_with_a_long_random_secret
@@ -75,6 +85,7 @@ Catatan:
 
 - Jangan commit `.env.local`.
 - Jangan menambahkan prefix `NEXT_PUBLIC_` pada service role key.
+- Anon key boleh berada di browser dan dipakai hanya untuk signed upload.
 - Jangan menulis PIN di komponen React atau route.
 - Gunakan PIN dan secret berbeda antara development dan production.
 

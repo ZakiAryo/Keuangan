@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { apiRequest } from "@/lib/client-api";
 import { formatCurrency } from "@/lib/utils";
@@ -40,8 +40,35 @@ export function MasterDataView({
 }) {
   const [category, setCategory] = useState(categoryEmpty);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categorySort, setCategorySort] = useState("name-asc");
   const [wallet, setWallet] = useState(walletEmpty);
   const [walletId, setWalletId] = useState<string | null>(null);
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((left, right) => {
+      if (categorySort === "name-desc") {
+        return right.name.localeCompare(left.name, "id-ID");
+      }
+      if (categorySort === "type") {
+        return (
+          left.type.localeCompare(right.type) ||
+          left.name.localeCompare(right.name, "id-ID")
+        );
+      }
+      if (categorySort === "payment") {
+        return (
+          left.payment_method.localeCompare(right.payment_method) ||
+          left.name.localeCompare(right.name, "id-ID")
+        );
+      }
+      if (categorySort === "newest") {
+        return Date.parse(right.created_at) - Date.parse(left.created_at);
+      }
+      if (categorySort === "oldest") {
+        return Date.parse(left.created_at) - Date.parse(right.created_at);
+      }
+      return left.name.localeCompare(right.name, "id-ID");
+    });
+  }, [categories, categorySort]);
 
   async function submitCategory(event: FormEvent) {
     event.preventDefault();
@@ -243,10 +270,25 @@ export function MasterDataView({
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <section className="panel p-5">
-          <h3 className="mb-4 font-semibold">Daftar kategori</h3>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="font-semibold">Daftar kategori</h3>
+            <select
+              className="field h-9 w-full sm:w-48"
+              value={categorySort}
+              onChange={(event) => setCategorySort(event.target.value)}
+              aria-label="Urutkan kategori"
+            >
+              <option value="name-asc">Nama A-Z</option>
+              <option value="name-desc">Nama Z-A</option>
+              <option value="type">Tipe transaksi</option>
+              <option value="payment">Cash / Non-Cash</option>
+              <option value="newest">Terbaru dibuat</option>
+              <option value="oldest">Terlama dibuat</option>
+            </select>
+          </div>
           <div className="space-y-2">
             {categories.length ? (
-              categories.map((item) => (
+              sortedCategories.map((item) => (
                 <div
                   className="flex items-center justify-between rounded-xl border border-line px-4 py-3"
                   key={item.id}

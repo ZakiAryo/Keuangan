@@ -18,6 +18,9 @@ Jika deployment memakai database lama, jalankan migration
 `supabase/migrations/20260607_add_category_payment_method.sql` di SQL Editor
 Supabase sebelum deployment baru dipromosikan ke production.
 
+Jalankan juga `supabase/migrations/20260607_add_transaction_attachments.sql`
+untuk membuat kolom lampiran dan bucket Storage privat.
+
 ```bash
 git add .
 git commit -m "Create personal finance tracker"
@@ -40,6 +43,7 @@ Tambahkan variable berikut untuk environment **Production**:
 | Name | Nilai |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Project URL Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key Supabase |
 | `APP_PIN` | PIN production |
 | `PIN_SESSION_SECRET` | Secret acak production |
@@ -63,12 +67,14 @@ bandingkan dengan hasil `npm run build` lokal.
 - Cookie session memiliki flag `HttpOnly`, `Secure`, dan `SameSite=Lax`.
 - Kategori dapat dibuat.
 - Kategori dapat diklasifikasikan sebagai Cash atau Non-Cash.
+- Daftar kategori dapat diurutkan.
 - Wallet dapat dibuat.
 - Transaksi dapat dibuat dan saldo berubah.
 - Transfer memengaruhi wallet asal dan tujuan.
 - Budget menampilkan pemakaian.
 - Laporan dan export CSV bekerja.
 - Filter Cash/Non-Cash bekerja pada transaksi, laporan, dan CSV.
+- Upload, preview, download, ganti, dan hapus lampiran transaksi bekerja.
 - Backup JSON dapat diunduh.
 - Logout menghapus session.
 

@@ -60,7 +60,7 @@ export function DashboardView({ data }: { data: DashboardData | null }) {
       <SectionHeader
         eyebrow="Ringkasan"
         title="Dashboard keuangan"
-        description="Pantau posisi kas, aktivitas bulan berjalan, dan tren enam bulan terakhir."
+        description="Platform untuk manage uang, semangat menabung!!."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

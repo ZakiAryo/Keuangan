@@ -12,7 +12,8 @@ privat, responsif, dan mudah dipasang di Vercel dengan database Supabase.
 
 - **PIN Gate tanpa login/register** dengan session cookie HTTP-only bertanda tangan.
 - **Dashboard keuangan** untuk saldo, pemasukan, pengeluaran, budget, dan chart.
-- **Manajemen transaksi** pemasukan dan pengeluaran lengkap dengan edit/hapus.
+- **Manajemen transaksi** pemasukan dan pengeluaran lengkap dengan edit/hapus,
+  detail transaksi, dan lampiran struk opsional.
 - **Manajemen kategori** berdasarkan tipe pemasukan/pengeluaran dan metode
   pembayaran Cash/Non-Cash.
 - **Manajemen wallet/dompet** dengan saldo awal dan saldo berjalan.
@@ -21,6 +22,7 @@ privat, responsif, dan mudah dipasang di Vercel dengan database Supabase.
 - **Laporan keuangan** berdasarkan rentang tanggal.
 - **Export CSV** transaksi sesuai periode laporan.
 - **Backup dan restore JSON** untuk seluruh data aplikasi.
+- **Upload struk** JPEG, PNG, WebP, atau PDF ke Supabase Storage privat.
 - **Responsive design** untuk desktop, tablet, dan mobile.
 - **Dark premium UI** dengan Recharts dan ikon lucide-react.
 
@@ -100,6 +102,7 @@ Buat `.env.local` pada root project:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 APP_PIN=your_pin
 PIN_SESSION_SECRET=your_random_secret_at_least_32_characters
@@ -108,6 +111,7 @@ PIN_SESSION_SECRET=your_random_secret_at_least_32_characters
 | Variable | Keterangan |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Project URL Supabase. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key untuk signed upload langsung dari browser. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Kunci server untuk mengakses database; jangan dipakai di client. |
 | `APP_PIN` | PIN yang harus dimasukkan untuk membuka aplikasi. |
 | `PIN_SESSION_SECRET` | Secret acak untuk menandatangani cookie session PIN. |
@@ -131,12 +135,17 @@ openssl rand -base64 48
    `wallet_transfers` tersedia.
 5. Buka **Project Settings > API**.
 6. Salin **Project URL** ke `NEXT_PUBLIC_SUPABASE_URL`.
-7. Salin **service_role key** ke `SUPABASE_SERVICE_ROLE_KEY`.
-8. Masukkan variable yang sama ke Vercel saat deployment.
+7. Salin **anon key** ke `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+8. Salin **service_role key** ke `SUPABASE_SERVICE_ROLE_KEY`.
+9. Masukkan variable yang sama ke Vercel saat deployment.
 
 Untuk database yang sudah dibuat dengan schema versi sebelumnya, jalankan
 [`supabase/migrations/20260607_add_category_payment_method.sql`](supabase/migrations/20260607_add_category_payment_method.sql)
 agar kategori lama mendapat nilai default `non_cash`.
+
+Untuk mengaktifkan lampiran transaksi pada database lama, jalankan juga
+[`supabase/migrations/20260607_add_transaction_attachments.sql`](supabase/migrations/20260607_add_transaction_attachments.sql).
+Migration ini menambahkan metadata lampiran dan bucket Storage privat.
 
 RLS diaktifkan tanpa policy publik. Semua akses data dilakukan oleh route server
 menggunakan service role key setelah session PIN diverifikasi.
@@ -179,11 +188,30 @@ create table if not exists public.transactions (
   description text not null check (char_length(description) between 1 and 180),
   transaction_date date not null default current_date,
   notes text,
+  attachment_path text,
+  attachment_name text,
+  attachment_type text,
+  attachment_size bigint,
   category_id uuid not null references public.categories(id) on delete restrict,
   wallet_id uuid not null references public.wallets(id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+insert into storage.buckets (
+  id, name, public, file_size_limit, allowed_mime_types
+)
+values (
+  'transaction-attachments',
+  'transaction-attachments',
+  false,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 create table if not exists public.budgets (
   id uuid primary key default gen_random_uuid(),
@@ -287,15 +315,19 @@ begin
       created_at timestamptz, updated_at timestamptz);
 
   insert into transactions (
-    id, type, amount, description, transaction_date, notes,
+    id, type, amount, description, transaction_date, notes, attachment_path,
+    attachment_name, attachment_type, attachment_size,
     category_id, wallet_id, created_at, updated_at
   )
   select id, type, amount, description, transaction_date, notes,
+    attachment_path, attachment_name, attachment_type, attachment_size,
     category_id, wallet_id, created_at, updated_at
   from jsonb_to_recordset(payload #> '{data,transactions}')
     as x(id uuid, type text, amount numeric, description text,
-      transaction_date date, notes text, category_id uuid, wallet_id uuid,
-      created_at timestamptz, updated_at timestamptz);
+      transaction_date date, notes text, attachment_path text,
+      attachment_name text, attachment_type text, attachment_size bigint,
+      category_id uuid, wallet_id uuid, created_at timestamptz,
+      updated_at timestamptz);
 
   insert into budgets (id, category_id, month, amount, created_at, updated_at)
   select id, category_id, month, amount, created_at, updated_at
@@ -354,7 +386,7 @@ npm run build
 1. Push project ke repository GitHub privat.
 2. Buka Vercel dan pilih **Add New Project**.
 3. Import repository.
-4. Tambahkan empat environment variable dari `.env.local`.
+4. Tambahkan lima environment variable dari `.env.local`.
 5. Deploy project.
 6. Buka URL production dan test PIN gate.
 7. Test pembuatan kategori, wallet, dan transaksi.
@@ -388,6 +420,7 @@ memanggil `requirePinSession()`.
 | GET | `/api/dashboard` | Ringkasan dashboard dan chart |
 | GET, POST | `/api/transactions` | Daftar/filter dan tambah transaksi |
 | PUT, DELETE | `/api/transactions/:id` | Ubah atau hapus transaksi |
+| GET, POST, PUT, DELETE | `/api/transactions/:id/attachment` | Lihat, izin upload, finalisasi/ganti, atau hapus lampiran |
 | GET, POST | `/api/categories` | Daftar dan tambah kategori Cash/Non-Cash |
 | PUT, DELETE | `/api/categories/:id` | Ubah atau hapus kategori |
 | GET, POST | `/api/wallets` | Daftar wallet beserta saldo dan tambah wallet |
@@ -445,6 +478,11 @@ tanggal, tipe, deskripsi, kategori, wallet, jumlah, dan catatan.
 Buka halaman **Data**, lalu klik **Unduh backup**. Backup menyimpan seluruh
 tabel dengan format versi `1`.
 
+Metadata lampiran ikut masuk ke JSON, tetapi file gambar/PDF tetap berada di
+Supabase Storage dan tidak disematkan ke file backup agar ukuran backup tidak
+melebihi batas server. Simpan file lampiran secara terpisah jika akan
+memindahkan data ke project Supabase lain.
+
 ### Restore JSON
 
 Buka halaman **Data**, pilih file backup, baca konfirmasi, lalu lanjutkan.
@@ -462,6 +500,8 @@ membatalkan seluruh perubahan.
 - Gunakan repository privat.
 - Jangan expose service role key ke frontend atau variable `NEXT_PUBLIC_*`.
 - Service role key hanya dibaca di route server.
+- Bucket lampiran bersifat privat dan file hanya dilayani melalui API yang
+  memeriksa session PIN.
 - Cookie session bersifat HTTP-only, `SameSite=Lax`, dan `Secure` di production.
 - Jika dipakai multi-user, ganti PIN gate dengan Supabase Auth atau sistem auth lain.
 

@@ -214,6 +214,73 @@ Response:
 }
 ```
 
+Jika transaksi memiliki lampiran, file di Supabase Storage ikut dibersihkan.
+
+### POST `/api/transactions/:id/attachment`
+
+Membuat signed upload token untuk mengirim file langsung dari browser ke
+Supabase Storage. Pendekatan ini menghindari batas payload Vercel Function.
+
+Format yang diterima:
+
+- `image/jpeg`
+- `image/png`
+- `image/webp`
+- `application/pdf`
+
+Ukuran maksimal 10 MB. Server memeriksa MIME dan signature file.
+
+```json
+{
+  "name": "struk-belanja.jpg",
+  "type": "image/jpeg",
+  "size": 2458120
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "path": "transaction-uuid/random-uuid.jpg",
+    "token": "short-lived-upload-token"
+  }
+}
+```
+
+Browser mengupload binary memakai Supabase `uploadToSignedUrl`, lalu memanggil
+endpoint `PUT` untuk finalisasi.
+
+### PUT `/api/transactions/:id/attachment`
+
+Memvalidasi signature file yang sudah diupload, menyimpan metadata, dan
+menghapus lampiran lama bila ada.
+
+```json
+{
+  "path": "transaction-uuid/random-uuid.jpg",
+  "name": "struk-belanja.jpg",
+  "type": "image/jpeg",
+  "size": 2458120
+}
+```
+
+### GET `/api/transactions/:id/attachment`
+
+Memverifikasi session PIN lalu mengarahkan browser ke signed download URL yang
+berlaku singkat.
+
+Tambahkan `?download=1` untuk mengunduh:
+
+```http
+GET /api/transactions/transaction-uuid/attachment?download=1
+```
+
+### DELETE `/api/transactions/:id/attachment`
+
+Menghapus file dan metadata lampiran tanpa menghapus transaksi.
+
 ## Categories
 
 ### GET `/api/categories`
@@ -472,6 +539,9 @@ Response:
 
 Restore menghapus dan mengisi ulang seluruh tabel dalam satu transaksi. Jika
 satu row gagal, seluruh operasi dibatalkan.
+
+Backup JSON hanya menyimpan metadata lampiran. Binary gambar/PDF tetap berada
+di bucket Supabase Storage dan tidak dipindahkan oleh restore JSON.
 
 ## Session PIN
 

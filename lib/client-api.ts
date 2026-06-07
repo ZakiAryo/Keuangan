@@ -2,10 +2,13 @@ export async function apiRequest<T>(
   url: string,
   options?: RequestInit,
 ): Promise<T> {
+  const isFormData = options?.body instanceof FormData;
   const response = await fetch(url, {
     ...options,
     headers: {
-      ...(options?.body ? { "Content-Type": "application/json" } : {}),
+      ...(options?.body && !isFormData
+        ? { "Content-Type": "application/json" }
+        : {}),
       ...options?.headers,
     },
   });

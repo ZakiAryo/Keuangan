@@ -61,7 +61,9 @@ Menyimpan rekening, uang tunai, e-wallet, atau sumber dana lain.
 ### `transactions`
 
 Menyimpan pemasukan dan pengeluaran. Kategori dan wallet memakai
-`ON DELETE RESTRICT` agar riwayat tidak kehilangan referensi.
+`ON DELETE RESTRICT` agar riwayat tidak kehilangan referensi. Kolom
+`attachment_*` menyimpan metadata file; binary file berada pada bucket Storage
+privat `transaction-attachments`.
 
 ### `budgets`
 
@@ -138,11 +140,36 @@ create table if not exists public.transactions (
   description text not null check (char_length(description) between 1 and 180),
   transaction_date date not null default current_date,
   notes text,
+  attachment_path text,
+  attachment_name text,
+  attachment_type text check (
+    attachment_type is null or attachment_type in (
+      'image/jpeg', 'image/png', 'image/webp', 'application/pdf'
+    )
+  ),
+  attachment_size bigint check (
+    attachment_size is null or attachment_size between 1 and 10485760
+  ),
   category_id uuid not null references public.categories(id) on delete restrict,
   wallet_id uuid not null references public.wallets(id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+insert into storage.buckets (
+  id, name, public, file_size_limit, allowed_mime_types
+)
+values (
+  'transaction-attachments',
+  'transaction-attachments',
+  false,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 create table if not exists public.budgets (
   id uuid primary key default gen_random_uuid(),
@@ -258,16 +285,20 @@ begin
     );
 
   insert into transactions (
-    id, type, amount, description, transaction_date, notes,
+    id, type, amount, description, transaction_date, notes, attachment_path,
+    attachment_name, attachment_type, attachment_size,
     category_id, wallet_id, created_at, updated_at
   )
   select id, type, amount, description, transaction_date, notes,
+    attachment_path, attachment_name, attachment_type, attachment_size,
     category_id, wallet_id, created_at, updated_at
   from jsonb_to_recordset(payload #> '{data,transactions}')
     as x(
       id uuid, type text, amount numeric, description text,
-      transaction_date date, notes text, category_id uuid, wallet_id uuid,
-      created_at timestamptz, updated_at timestamptz
+      transaction_date date, notes text, attachment_path text,
+      attachment_name text, attachment_type text, attachment_size bigint,
+      category_id uuid, wallet_id uuid, created_at timestamptz,
+      updated_at timestamptz
     );
 
   insert into budgets (
@@ -328,3 +359,7 @@ Migration penambahan klasifikasi pembayaran tersedia di
 `supabase/migrations/20260607_add_category_payment_method.sql`. Kategori lama
 diberi default `non_cash`, dan fungsi restore tetap menerima backup versi lama
 yang belum memiliki field `payment_method`.
+
+Migration lampiran tersedia di
+`supabase/migrations/20260607_add_transaction_attachments.sql`. Bucket dibuat
+private, dibatasi 10 MB, dan hanya menerima JPEG, PNG, WebP, atau PDF.
