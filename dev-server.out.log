@@ -16,3 +16,17 @@
  ✓ Compiled /pin in 14s (567 modules)
  GET /pin 200 in 17092ms
  ✓ Compiled in 633ms (239 modules)
+   Reload env: .env.local
+ ✓ Compiled in 23.6s (669 modules)
+ ✓ Compiled in 900ms (239 modules)
+ ✓ Compiled in 533ms (239 modules)
+ ✓ Compiled in 630ms (239 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.1s (558 modules)
+ GET /pin 404 in 3461ms
+ GET /pin 200 in 195ms
+ GET /pin? 200 in 139ms
+ GET /pin? 200 in 226ms
+ GET /pin? 200 in 135ms
+ ✓ Compiled in 1041ms (239 modules)
+ ✓ Compiled in 851ms (239 modules)

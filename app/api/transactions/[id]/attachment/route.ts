@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   ApiError,
   assertSupabaseResult,
+  formatSupabaseError,
   handleApiError,
   requirePinSession,
 } from "@/lib/api";
@@ -47,7 +48,7 @@ async function getTransaction(id: string) {
       result.error.code === "PGRST116" ? 404 : 500,
       result.error.code === "PGRST116"
         ? "Transaksi tidak ditemukan."
-        : result.error.message,
+        : formatSupabaseError(result.error.message),
     );
   }
   return result.data;

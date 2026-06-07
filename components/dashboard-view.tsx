@@ -19,6 +19,11 @@ import {
   YAxis,
 } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import {
+  CHART_COLORS,
+  chartTooltipContentStyle,
+  chartTooltipTextStyle,
+} from "@/lib/chart-theme";
 import { EmptyState, SectionHeader } from "@/components/ui";
 import type { DashboardData } from "@/types/finance";
 
@@ -91,39 +96,59 @@ export function DashboardView({ data }: { data: DashboardData | null }) {
               <AreaChart data={data.monthlyTrend}>
                 <defs>
                   <linearGradient id="income" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#70e1b0" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#70e1b0" stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor={CHART_COLORS.income}
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={CHART_COLORS.income}
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                   <linearGradient id="expense" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#fb7185" stopOpacity={0.24} />
-                    <stop offset="95%" stopColor="#fb7185" stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor={CHART_COLORS.expense}
+                      stopOpacity={0.24}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={CHART_COLORS.expense}
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="#1c2838" strokeDasharray="4 4" />
-                <XAxis dataKey="month" tick={{ fill: "#8b9bb0", fontSize: 11 }} />
+                <CartesianGrid
+                  stroke={CHART_COLORS.grid}
+                  strokeDasharray="4 4"
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: CHART_COLORS.muted, fontSize: 11 }}
+                />
                 <YAxis
-                  tick={{ fill: "#8b9bb0", fontSize: 11 }}
+                  tick={{ fill: CHART_COLORS.muted, fontSize: 11 }}
                   tickFormatter={(value) => `${Math.round(value / 1_000_000)}jt`}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "#0d1420",
-                    border: "1px solid #1c2838",
-                    borderRadius: 12,
-                  }}
+                  contentStyle={chartTooltipContentStyle}
+                  labelStyle={chartTooltipTextStyle}
+                  itemStyle={chartTooltipTextStyle}
                   formatter={(value) => formatCurrency(Number(value))}
                 />
                 <Area
                   type="monotone"
                   dataKey="income"
-                  stroke="#70e1b0"
+                  stroke={CHART_COLORS.income}
                   fill="url(#income)"
                   strokeWidth={2}
                 />
                 <Area
                   type="monotone"
                   dataKey="expense"
-                  stroke="#fb7185"
+                  stroke={CHART_COLORS.expense}
                   fill="url(#expense)"
                   strokeWidth={2}
                 />
@@ -152,11 +177,9 @@ export function DashboardView({ data }: { data: DashboardData | null }) {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        background: "#0d1420",
-                        border: "1px solid #1c2838",
-                        borderRadius: 12,
-                      }}
+                      contentStyle={chartTooltipContentStyle}
+                      labelStyle={chartTooltipTextStyle}
+                      itemStyle={chartTooltipTextStyle}
                       formatter={(value) => formatCurrency(Number(value))}
                     />
                   </PieChart>

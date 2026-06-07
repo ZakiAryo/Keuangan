@@ -13,6 +13,11 @@ import {
   YAxis,
 } from "recharts";
 import { apiRequest } from "@/lib/client-api";
+import {
+  CHART_COLORS,
+  chartTooltipContentStyle,
+  chartTooltipTextStyle,
+} from "@/lib/chart-theme";
 import { formatCurrency } from "@/lib/utils";
 import {
   ActionButton,
@@ -129,23 +134,37 @@ export function ReportsView({
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={report.monthly}>
-                      <CartesianGrid stroke="#1c2838" strokeDasharray="4 4" />
-                      <XAxis dataKey="month" tick={{ fill: "#8b9bb0", fontSize: 11 }} />
+                      <CartesianGrid
+                        stroke={CHART_COLORS.grid}
+                        strokeDasharray="4 4"
+                      />
+                      <XAxis
+                        dataKey="month"
+                        tick={{ fill: CHART_COLORS.muted, fontSize: 11 }}
+                      />
                       <YAxis
-                        tick={{ fill: "#8b9bb0", fontSize: 11 }}
+                        tick={{ fill: CHART_COLORS.muted, fontSize: 11 }}
                         tickFormatter={(value) => `${Math.round(value / 1_000_000)}jt`}
                       />
                       <Tooltip
-                        contentStyle={{
-                          background: "#0d1420",
-                          border: "1px solid #1c2838",
-                          borderRadius: 12,
-                        }}
+                        contentStyle={chartTooltipContentStyle}
+                        labelStyle={chartTooltipTextStyle}
+                        itemStyle={chartTooltipTextStyle}
                         formatter={(value) => formatCurrency(Number(value))}
                       />
                       <Legend />
-                      <Bar dataKey="income" name="Pemasukan" fill="#70e1b0" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="expense" name="Pengeluaran" fill="#fb7185" radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="income"
+                        name="Pemasukan"
+                        fill={CHART_COLORS.income}
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="expense"
+                        name="Pengeluaran"
+                        fill={CHART_COLORS.expense}
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

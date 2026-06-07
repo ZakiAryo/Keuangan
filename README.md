@@ -554,6 +554,20 @@ dihapus. Jangan mengubah nama cookie tanpa memperbarui middleware dan route.
 Jangan import `lib/supabase.ts` ke Client Component. Key tidak boleh memiliki
 prefix `NEXT_PUBLIC_`.
 
+### Upload lampiran gagal karena kolom tidak ditemukan
+
+Jika muncul pesan `column transactions.attachment_path does not exist`, kode
+aplikasi sudah ter-deploy tetapi migration lampiran belum dijalankan. Buka
+Supabase SQL Editor, jalankan:
+
+```text
+supabase/migrations/20260607_add_transaction_attachments.sql
+```
+
+Migration tersebut menambahkan metadata lampiran, membuat bucket Storage
+private, memperbarui fungsi restore, dan meminta PostgREST memuat ulang schema.
+Setelah selesai, muat ulang aplikasi dan coba upload kembali.
+
 ## Dokumentasi Tambahan
 
 - [`docs/SETUP.md`](docs/SETUP.md)
@@ -561,12 +575,13 @@ prefix `NEXT_PUBLIC_`.
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - [`docs/API.md`](docs/API.md)
 - [`docs/UI-GUIDE.md`](docs/UI-GUIDE.md)
+- [`docs/COLOR-CUSTOMIZATION.md`](docs/COLOR-CUSTOMIZATION.md)
 - [`docs/SECURITY.md`](docs/SECURITY.md)
 
 ## Roadmap
 
 - Light mode.
-- Upload bukti transaksi.
+- Kompresi dan optimasi otomatis bukti transaksi.
 - Reminder tagihan.
 - Target tabungan.
 - Multi-user login.

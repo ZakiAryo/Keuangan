@@ -54,8 +54,24 @@ export function assertSupabaseResult(
   if (result.error) {
     throw new ApiError(
       500,
-      result.error.message || fallbackMessage,
+      formatSupabaseError(result.error.message || fallbackMessage),
       result.error.details,
     );
   }
+}
+
+export function formatSupabaseError(message: string) {
+  if (
+    /column transactions\.attachment_(path|name|type|size) does not exist/i.test(
+      message,
+    )
+  ) {
+    return [
+      "Fitur lampiran belum aktif di database.",
+      "Jalankan supabase/migrations/20260607_add_transaction_attachments.sql",
+      "melalui Supabase SQL Editor, lalu muat ulang aplikasi.",
+    ].join(" ");
+  }
+
+  return message;
 }

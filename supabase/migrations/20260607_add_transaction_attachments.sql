@@ -131,3 +131,5 @@ revoke all on function public.restore_finance_backup(jsonb) from public;
 revoke all on function public.restore_finance_backup(jsonb) from anon;
 revoke all on function public.restore_finance_backup(jsonb) from authenticated;
 grant execute on function public.restore_finance_backup(jsonb) to service_role;
+
+notify pgrst, 'reload schema';

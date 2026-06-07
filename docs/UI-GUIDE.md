@@ -20,6 +20,9 @@ aksi destruktif memakai warna merah.
 Token tersedia di `tailwind.config.ts` dan class komponen global tersedia pada
 `app/globals.css`.
 
+Panduan lokasi warna, chart, tooltip, dan proses pengujiannya tersedia di
+[`COLOR-CUSTOMIZATION.md`](./COLOR-CUSTOMIZATION.md).
+
 ## Layout Desktop
 
 - Sidebar tetap selebar 248 px.
@@ -77,7 +80,9 @@ tipe, metode pembayaran, serta waktu pembuatan.
 ### Chart
 
 Semua chart harus berada dalam `ResponsiveContainer`. Tooltip memakai background
-panel dan border line agar terbaca di dark mode.
+panel, border line, dan teks putih agar terbaca di dark mode. Warna chart statis
+dipusatkan di `lib/chart-theme.ts`, sedangkan warna donut mengikuti warna
+kategori dari database.
 
 ## Responsive Behavior
 
