@@ -2,6 +2,7 @@
 
 import {
   ArrowLeftRight,
+  BellRing,
   ChartNoAxesCombined,
   FolderCog,
   Gauge,
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
 export type AppView =
   | "dashboard"
   | "transactions"
+  | "reminders"
   | "master"
   | "transfers"
   | "budgets"
@@ -25,6 +27,7 @@ export type AppView =
 const navigation = [
   { id: "dashboard", label: "Dashboard", icon: Gauge },
   { id: "transactions", label: "Transaksi", icon: ReceiptText },
+  { id: "reminders", label: "Reminder", icon: BellRing },
   { id: "master", label: "Data utama", icon: FolderCog },
   { id: "transfers", label: "Transfer", icon: ArrowLeftRight },
   { id: "budgets", label: "Budget", icon: Target },
@@ -90,15 +93,15 @@ export function AppShell({
         <div className="mx-auto max-w-[1440px]">{children}</div>
       </main>
 
-      <nav className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-around rounded-2xl border border-line bg-[#0b111b]/95 p-1.5 shadow-2xl backdrop-blur lg:hidden">
-        {navigation.slice(0, 6).map((item) => {
+      <nav className="fixed inset-x-3 bottom-3 z-40 flex items-center gap-1 overflow-x-auto rounded-2xl border border-line bg-[#0b111b]/95 p-1.5 shadow-2xl backdrop-blur lg:hidden">
+        {navigation.map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.id}
               aria-label={item.label}
               className={cn(
-                "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] transition",
+                "flex min-w-[62px] flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] transition",
                 view === item.id ? "bg-accent/10 text-accent" : "text-muted",
               )}
               onClick={() => onViewChange(item.id)}
@@ -108,17 +111,6 @@ export function AppShell({
             </button>
           );
         })}
-        <button
-          aria-label="Data dan pengaturan"
-          className={cn(
-            "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] transition",
-            view === "settings" ? "bg-accent/10 text-accent" : "text-muted",
-          )}
-          onClick={() => onViewChange("settings")}
-        >
-          <Settings2 size={18} />
-          <span>Data</span>
-        </button>
       </nav>
     </div>
   );

@@ -19,6 +19,8 @@ privat, responsif, dan mudah dipasang di Vercel dengan database Supabase.
 - **Manajemen wallet/dompet** dengan saldo awal dan saldo berjalan.
 - **Transfer antar wallet** termasuk biaya transfer.
 - **Budget bulanan** per kategori dan indikator pemakaian.
+- **Reminder tagihan** dengan tanggal jatuh tempo, nominal opsional, status
+  terlambat/hari ini, dan penandaan sudah dibayar.
 - **Laporan keuangan** berdasarkan rentang tanggal.
 - **Export CSV** transaksi sesuai periode laporan.
 - **Backup dan restore JSON** untuk seluruh data aplikasi.
@@ -90,7 +92,8 @@ dependency tetap ringkas.
 
 - `app/`: halaman App Router dan layout global.
 - `app/api/`: endpoint internal yang hanya dapat dipakai setelah session PIN valid.
-- `components/`: view dan komponen UI aplikasi.
+- `components/`: view dan komponen UI aplikasi, termasuk
+  `reminders-view.tsx`.
 - `lib/`: autentikasi, Supabase server client, validasi, dan kalkulasi keuangan.
 - `types/`: kontrak TypeScript untuk aplikasi dan schema database.
 - `middleware.ts`: proteksi halaman dan API sebelum request masuk ke route.
@@ -131,8 +134,8 @@ openssl rand -base64 48
 1. Buat project baru di [Supabase](https://supabase.com/).
 2. Buka **SQL Editor**.
 3. Salin dan jalankan seluruh isi [`supabase/schema.sql`](supabase/schema.sql).
-4. Pastikan tabel `categories`, `wallets`, `transactions`, `budgets`, dan
-   `wallet_transfers` tersedia.
+4. Pastikan tabel `categories`, `wallets`, `transactions`, `budgets`,
+   `wallet_transfers`, dan `payment_reminders` tersedia.
 5. Buka **Project Settings > API**.
 6. Salin **Project URL** ke `NEXT_PUBLIC_SUPABASE_URL`.
 7. Salin **anon key** ke `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
@@ -146,6 +149,9 @@ agar kategori lama mendapat nilai default `non_cash`.
 Untuk mengaktifkan lampiran transaksi pada database lama, jalankan juga
 [`supabase/migrations/20260607_add_transaction_attachments.sql`](supabase/migrations/20260607_add_transaction_attachments.sql).
 Migration ini menambahkan metadata lampiran dan bucket Storage privat.
+
+Untuk mengaktifkan reminder pada database lama, jalankan
+[`supabase/migrations/20260607_add_payment_reminders.sql`](supabase/migrations/20260607_add_payment_reminders.sql).
 
 RLS diaktifkan tanpa policy publik. Semua akses data dilakukan oleh route server
 menggunakan service role key setelah session PIN diverifikasi.
@@ -236,6 +242,23 @@ create table if not exists public.wallet_transfers (
   check (from_wallet_id <> to_wallet_id)
 );
 
+create table if not exists public.payment_reminders (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check (char_length(title) between 1 and 120),
+  due_date date not null,
+  amount numeric(18,2) check (amount is null or amount > 0),
+  notes text,
+  status text not null default 'pending'
+    check (status in ('pending', 'paid')),
+  paid_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (
+    (status = 'pending' and paid_at is null) or
+    (status = 'paid' and paid_at is not null)
+  )
+);
+
 create index if not exists transactions_date_idx
   on public.transactions (transaction_date desc);
 create index if not exists transactions_wallet_idx
@@ -245,6 +268,8 @@ create index if not exists transactions_category_idx
 create index if not exists budgets_month_idx on public.budgets (month);
 create index if not exists wallet_transfers_date_idx
   on public.wallet_transfers (transfer_date desc);
+create index if not exists payment_reminders_status_due_date_idx
+  on public.payment_reminders (status, due_date);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -276,11 +301,16 @@ drop trigger if exists wallet_transfers_set_updated_at on public.wallet_transfer
 create trigger wallet_transfers_set_updated_at before update on public.wallet_transfers
 for each row execute function public.set_updated_at();
 
+drop trigger if exists payment_reminders_set_updated_at on public.payment_reminders;
+create trigger payment_reminders_set_updated_at before update on public.payment_reminders
+for each row execute function public.set_updated_at();
+
 alter table public.categories enable row level security;
 alter table public.wallets enable row level security;
 alter table public.transactions enable row level security;
 alter table public.budgets enable row level security;
 alter table public.wallet_transfers enable row level security;
+alter table public.payment_reminders enable row level security;
 
 create or replace function public.restore_finance_backup(payload jsonb)
 returns void
@@ -293,6 +323,7 @@ begin
     raise exception 'Versi backup tidak didukung';
   end if;
 
+  delete from payment_reminders;
   delete from wallet_transfers;
   delete from budgets;
   delete from transactions;
@@ -345,6 +376,20 @@ begin
     as x(id uuid, from_wallet_id uuid, to_wallet_id uuid, amount numeric,
       fee numeric, transfer_date date, notes text,
       created_at timestamptz, updated_at timestamptz);
+
+  insert into payment_reminders (
+    id, title, due_date, amount, notes, status, paid_at, created_at, updated_at
+  )
+  select id, title, due_date, amount, notes, status, paid_at,
+    created_at, updated_at
+  from jsonb_to_recordset(
+    coalesce(payload #> '{data,payment_reminders}', '[]'::jsonb)
+  )
+    as x(
+      id uuid, title text, due_date date, amount numeric, notes text,
+      status text, paid_at timestamptz, created_at timestamptz,
+      updated_at timestamptz
+    );
 end;
 $$;
 
@@ -404,8 +449,9 @@ Detail lengkap tersedia di [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 5. Catat pengeluaran harian sebagai Cash atau Non-Cash.
 6. Pantau saldo dan grafik pada dashboard.
 7. Buat budget bulanan per kategori pengeluaran.
-8. Buka laporan dan pilih rentang tanggal.
-9. Export transaksi ke CSV atau buat backup JSON.
+8. Tambahkan reminder tagihan dan tandai sudah dibayar setelah selesai.
+9. Buka laporan dan pilih rentang tanggal.
+10. Export transaksi ke CSV atau buat backup JSON.
 
 ## API Documentation
 
@@ -428,6 +474,8 @@ memanggil `requirePinSession()`.
 | GET, POST, DELETE | `/api/transfers` | Daftar, tambah, dan hapus transfer |
 | GET, POST | `/api/budgets` | Daftar dan upsert budget |
 | PUT, DELETE | `/api/budgets/:id` | Ubah atau hapus budget |
+| GET, POST | `/api/reminders` | Daftar/filter dan tambah reminder |
+| PUT, DELETE | `/api/reminders/:id` | Ubah status/data atau hapus reminder |
 | GET | `/api/reports` | Laporan berdasarkan `from` dan `to` |
 | GET | `/api/export/csv` | Download transaksi CSV |
 | GET | `/api/backup` | Download seluruh data sebagai JSON |
@@ -476,7 +524,7 @@ tanggal, tipe, deskripsi, kategori, wallet, jumlah, dan catatan.
 ### Backup JSON
 
 Buka halaman **Data**, lalu klik **Unduh backup**. Backup menyimpan seluruh
-tabel dengan format versi `1`.
+tabel, termasuk reminder pembayaran, dengan format versi `1`.
 
 Metadata lampiran ikut masuk ke JSON, tetapi file gambar/PDF tetap berada di
 Supabase Storage dan tidak disematkan ke file backup agar ukuran backup tidak
@@ -568,6 +616,12 @@ Migration tersebut menambahkan metadata lampiran, membuat bucket Storage
 private, memperbarui fungsi restore, dan meminta PostgREST memuat ulang schema.
 Setelah selesai, muat ulang aplikasi dan coba upload kembali.
 
+### Menu reminder gagal memuat
+
+Jika muncul pesan bahwa tabel `payment_reminders` tidak ditemukan, jalankan
+`supabase/migrations/20260607_add_payment_reminders.sql` melalui Supabase SQL
+Editor. Migration juga memuat ulang schema PostgREST.
+
 ## Dokumentasi Tambahan
 
 - [`docs/SETUP.md`](docs/SETUP.md)
@@ -582,7 +636,7 @@ Setelah selesai, muat ulang aplikasi dan coba upload kembali.
 
 - Light mode.
 - Kompresi dan optimasi otomatis bukti transaksi.
-- Reminder tagihan.
+- Push notification dan reminder berulang.
 - Target tabungan.
 - Multi-user login.
 - Import file Excel/CSV.

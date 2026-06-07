@@ -442,6 +442,87 @@ Memperbarui budget berdasarkan UUID.
 
 Menghapus budget.
 
+## Reminders
+
+Reminder adalah notifikasi di dalam aplikasi. Endpoint ini belum mengirim push
+notification, email, atau WhatsApp.
+
+### GET `/api/reminders`
+
+Mengambil reminder yang diurutkan dari tanggal jatuh tempo terdekat.
+
+Query param opsional:
+
+| Param | Nilai | Fungsi |
+| --- | --- | --- |
+| `status` | `pending` atau `paid` | Filter status pembayaran |
+
+```http
+GET /api/reminders?status=pending
+```
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "id": "reminder-uuid",
+      "title": "Bayar listrik",
+      "due_date": "2026-06-15",
+      "amount": 450000,
+      "notes": "Bayar melalui aplikasi bank",
+      "status": "pending",
+      "paid_at": null
+    }
+  ]
+}
+```
+
+### POST `/api/reminders`
+
+Membuat reminder baru. `amount` dan `notes` boleh `null`.
+
+```json
+{
+  "title": "Bayar internet",
+  "due_date": "2026-06-20",
+  "amount": 350000,
+  "notes": null
+}
+```
+
+Status default adalah `pending`.
+
+### PUT `/api/reminders/:id`
+
+Memperbarui sebagian data reminder atau menandainya sudah dibayar.
+
+```json
+{
+  "status": "paid"
+}
+```
+
+Server mengisi `paid_at` secara otomatis. Untuk mengembalikan reminder menjadi
+belum dibayar:
+
+```json
+{
+  "status": "pending"
+}
+```
+
+### DELETE `/api/reminders/:id`
+
+Menghapus reminder berdasarkan UUID.
+
+```json
+{
+  "success": true
+}
+```
+
 ## Reports
 
 ### GET `/api/reports`
@@ -517,7 +598,8 @@ Mengambil seluruh data dalam format backup versi 1.
     "wallets": [],
     "transactions": [],
     "budgets": [],
-    "wallet_transfers": []
+    "wallet_transfers": [],
+    "payment_reminders": []
   }
 }
 ```

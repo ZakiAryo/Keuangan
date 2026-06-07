@@ -1,8 +1,11 @@
 "use client";
 
+import { format } from "date-fns";
 import {
   ArrowDownRight,
   ArrowUpRight,
+  BellRing,
+  CalendarClock,
   WalletCards,
   Target,
 } from "lucide-react";
@@ -25,10 +28,17 @@ import {
   chartTooltipTextStyle,
 } from "@/lib/chart-theme";
 import { EmptyState, SectionHeader } from "@/components/ui";
-import type { DashboardData } from "@/types/finance";
+import type { DashboardData, PaymentReminder } from "@/types/finance";
 
-export function DashboardView({ data }: { data: DashboardData | null }) {
+export function DashboardView({
+  data,
+  reminders,
+}: {
+  data: DashboardData | null;
+  reminders: PaymentReminder[];
+}) {
   if (!data) return <DashboardSkeleton />;
+  const today = format(new Date(), "yyyy-MM-dd");
 
   const cards = [
     {
@@ -87,6 +97,80 @@ export function DashboardView({ data }: { data: DashboardData | null }) {
           );
         })}
       </div>
+
+      <section className="panel mt-4 p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Reminder pembayaran</h3>
+            <p className="mt-1 text-xs text-muted">
+              Tagihan belum dibayar dengan jatuh tempo terdekat.
+            </p>
+          </div>
+          <BellRing className="text-amber-200" size={20} />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {reminders.filter((item) => item.status === "pending").length ? (
+            reminders
+              .filter((item) => item.status === "pending")
+              .slice(0, 4)
+              .map((reminder) => {
+                const overdue = reminder.due_date < today;
+                const dueToday = reminder.due_date === today;
+                return (
+                  <article
+                    className={`rounded-xl border p-4 ${
+                      overdue
+                        ? "border-danger/25 bg-danger/[0.04]"
+                        : "border-line bg-white/[0.02]"
+                    }`}
+                    key={reminder.id}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-medium">{reminder.title}</p>
+                      <CalendarClock
+                        className={
+                          overdue
+                            ? "shrink-0 text-danger"
+                            : dueToday
+                              ? "shrink-0 text-amber-200"
+                              : "shrink-0 text-muted"
+                        }
+                        size={17}
+                      />
+                    </div>
+                    <p
+                      className={`mt-2 text-xs ${
+                        overdue
+                          ? "text-danger"
+                          : dueToday
+                            ? "text-amber-200"
+                            : "text-muted"
+                      }`}
+                    >
+                      {overdue
+                        ? "Terlambat"
+                        : dueToday
+                          ? "Jatuh tempo hari ini"
+                          : formatDate(reminder.due_date)}
+                    </p>
+                    {reminder.amount !== null ? (
+                      <p className="mt-3 text-sm font-semibold">
+                        {formatCurrency(reminder.amount)}
+                      </p>
+                    ) : null}
+                  </article>
+                );
+              })
+          ) : (
+            <div className="md:col-span-2 xl:col-span-4">
+              <EmptyState
+                title="Tidak ada tagihan tertunda"
+                description="Reminder yang belum dibayar akan muncul di sini."
+              />
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.55fr_1fr]">
         <section className="panel p-5">

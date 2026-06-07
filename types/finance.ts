@@ -73,6 +73,20 @@ export interface WalletTransfer {
   updated_at: string;
 }
 
+export type PaymentReminderStatus = "pending" | "paid";
+
+export interface PaymentReminder {
+  id: string;
+  title: string;
+  due_date: string;
+  amount: number | null;
+  notes: string | null;
+  status: PaymentReminderStatus;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DashboardData {
   totals: {
     balance: number;
@@ -110,5 +124,6 @@ export interface BackupData {
     transactions: Transaction[];
     budgets: Budget[];
     wallet_transfers: WalletTransfer[];
+    payment_reminders: PaymentReminder[];
   };
 }

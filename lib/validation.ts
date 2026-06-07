@@ -36,6 +36,26 @@ export const budgetSchema = z.object({
   amount: money,
 });
 
+const paymentReminderFields = {
+  title: z.string().trim().min(1).max(120),
+  due_date: date,
+  amount: z.coerce.number().positive().nullable().optional(),
+  notes: z.string().trim().max(1000).nullable().optional(),
+  status: z.enum(["pending", "paid"]),
+};
+
+export const paymentReminderSchema = z.object({
+  ...paymentReminderFields,
+  status: paymentReminderFields.status.default("pending"),
+});
+
+export const paymentReminderUpdateSchema = z
+  .object(paymentReminderFields)
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "Minimal satu field harus diperbarui.",
+  });
+
 export const transferSchema = z
   .object({
     from_wallet_id: id,

@@ -73,5 +73,18 @@ export function formatSupabaseError(message: string) {
     ].join(" ");
   }
 
+  if (
+    /relation ['"]?public\.payment_reminders['"]? does not exist/i.test(
+      message,
+    ) ||
+    /could not find the table ['"]?public\.payment_reminders/i.test(message)
+  ) {
+    return [
+      "Fitur reminder belum aktif di database.",
+      "Jalankan supabase/migrations/20260607_add_payment_reminders.sql",
+      "melalui Supabase SQL Editor, lalu muat ulang aplikasi.",
+    ].join(" ");
+  }
+
   return message;
 }

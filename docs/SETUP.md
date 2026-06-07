@@ -40,7 +40,7 @@ dan Tailwind CSS.
 1. Buat project Supabase.
 2. Buka **SQL Editor**.
 3. Jalankan isi `supabase/schema.sql`.
-4. Pastikan lima tabel dan fungsi `restore_finance_backup` berhasil dibuat.
+4. Pastikan enam tabel dan fungsi `restore_finance_backup` berhasil dibuat.
 5. Ambil Project URL dan service role key dari **Project Settings > API**.
 
 Jika database sudah memakai versi lama tanpa klasifikasi Cash/Non-Cash, jalankan:
@@ -60,6 +60,15 @@ supabase/migrations/20260607_add_transaction_attachments.sql
 
 Migration membuat kolom metadata lampiran dan bucket Storage privat
 `transaction-attachments`.
+
+Untuk database lama yang belum memiliki reminder tagihan, jalankan:
+
+```text
+supabase/migrations/20260607_add_payment_reminders.sql
+```
+
+Migration membuat tabel reminder, index jatuh tempo, trigger `updated_at`, dan
+memperbarui fungsi restore agar backup lama tetap dapat dipakai.
 
 Panduan database lengkap tersedia di [DATABASE.md](DATABASE.md).
 

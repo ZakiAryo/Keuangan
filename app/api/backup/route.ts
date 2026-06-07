@@ -10,13 +10,14 @@ export async function GET() {
   try {
     await requirePinSession();
     const supabase = getSupabaseAdmin();
-    const [categories, wallets, transactions, budgets, transfers] =
+    const [categories, wallets, transactions, budgets, transfers, reminders] =
       await Promise.all([
         supabase.from("categories").select("*").order("created_at"),
         supabase.from("wallets").select("*").order("created_at"),
         supabase.from("transactions").select("*").order("created_at"),
         supabase.from("budgets").select("*").order("created_at"),
         supabase.from("wallet_transfers").select("*").order("created_at"),
+        supabase.from("payment_reminders").select("*").order("created_at"),
       ]);
 
     [
@@ -25,6 +26,7 @@ export async function GET() {
       transactions,
       budgets,
       transfers,
+      reminders,
     ].forEach((result) => assertSupabaseResult(result, "Gagal membuat backup."));
 
     return NextResponse.json({
@@ -36,6 +38,7 @@ export async function GET() {
         transactions: transactions.data ?? [],
         budgets: budgets.data ?? [],
         wallet_transfers: transfers.data ?? [],
+        payment_reminders: reminders.data ?? [],
       },
     });
   } catch (error) {

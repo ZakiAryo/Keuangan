@@ -219,6 +219,40 @@ export type Database = {
           },
         ];
       };
+      payment_reminders: {
+        Row: TimestampColumns & {
+          id: string;
+          title: string;
+          due_date: string;
+          amount: number | null;
+          notes: string | null;
+          status: "pending" | "paid";
+          paid_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          due_date: string;
+          amount?: number | null;
+          notes?: string | null;
+          status?: "pending" | "paid";
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          due_date?: string;
+          amount?: number | null;
+          notes?: string | null;
+          status?: "pending" | "paid";
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

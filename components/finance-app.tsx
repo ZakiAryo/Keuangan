@@ -8,6 +8,7 @@ import { DashboardView } from "@/components/dashboard-view";
 import { DataToolsView } from "@/components/data-tools-view";
 import { MasterDataView } from "@/components/master-data-view";
 import { ReportsView } from "@/components/reports-view";
+import { RemindersView } from "@/components/reminders-view";
 import { TransactionsView } from "@/components/transactions-view";
 import { TransfersView } from "@/components/transfers-view";
 import { apiRequest } from "@/lib/client-api";
@@ -15,6 +16,7 @@ import type {
   Budget,
   Category,
   DashboardData,
+  PaymentReminder,
   Transaction,
   Wallet,
   WalletTransfer,
@@ -27,6 +29,7 @@ interface FinanceState {
   transactions: Transaction[];
   budgets: Budget[];
   transfers: WalletTransfer[];
+  reminders: PaymentReminder[];
 }
 
 const initialState: FinanceState = {
@@ -36,6 +39,7 @@ const initialState: FinanceState = {
   transactions: [],
   budgets: [],
   transfers: [],
+  reminders: [],
 };
 
 export function FinanceApp() {
@@ -55,15 +59,23 @@ export function FinanceApp() {
   const refresh = useCallback(async () => {
     setLoadError("");
     try {
-      const [dashboard, categories, wallets, transactions, budgets, transfers] =
-        await Promise.all([
-          apiRequest<{ data: DashboardData }>("/api/dashboard"),
-          apiRequest<{ data: Category[] }>("/api/categories"),
-          apiRequest<{ data: Wallet[] }>("/api/wallets"),
-          apiRequest<{ data: Transaction[] }>("/api/transactions"),
-          apiRequest<{ data: Budget[] }>("/api/budgets"),
-          apiRequest<{ data: WalletTransfer[] }>("/api/transfers"),
-        ]);
+      const [
+        dashboard,
+        categories,
+        wallets,
+        transactions,
+        budgets,
+        transfers,
+        reminders,
+      ] = await Promise.all([
+        apiRequest<{ data: DashboardData }>("/api/dashboard"),
+        apiRequest<{ data: Category[] }>("/api/categories"),
+        apiRequest<{ data: Wallet[] }>("/api/wallets"),
+        apiRequest<{ data: Transaction[] }>("/api/transactions"),
+        apiRequest<{ data: Budget[] }>("/api/budgets"),
+        apiRequest<{ data: WalletTransfer[] }>("/api/transfers"),
+        apiRequest<{ data: PaymentReminder[] }>("/api/reminders"),
+      ]);
       setData({
         dashboard: dashboard.data,
         categories: categories.data,
@@ -71,6 +83,7 @@ export function FinanceApp() {
         transactions: transactions.data,
         budgets: budgets.data,
         transfers: transfers.data,
+        reminders: reminders.data,
       });
     } catch (error) {
       const message =
@@ -115,13 +128,23 @@ export function FinanceApp() {
       ) : null}
 
       {view === "dashboard" ? (
-        <DashboardView data={loading ? null : data.dashboard} />
+        <DashboardView
+          data={loading ? null : data.dashboard}
+          reminders={data.reminders}
+        />
       ) : null}
       {view === "transactions" ? (
         <TransactionsView
           transactions={data.transactions}
           categories={data.categories}
           wallets={data.wallets}
+          refresh={refresh}
+          notify={notify}
+        />
+      ) : null}
+      {view === "reminders" ? (
+        <RemindersView
+          reminders={data.reminders}
           refresh={refresh}
           notify={notify}
         />

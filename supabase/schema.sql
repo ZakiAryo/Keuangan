@@ -152,6 +152,23 @@ create table if not exists public.wallet_transfers (
   check (from_wallet_id <> to_wallet_id)
 );
 
+create table if not exists public.payment_reminders (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check (char_length(title) between 1 and 120),
+  due_date date not null,
+  amount numeric(18,2) check (amount is null or amount > 0),
+  notes text,
+  status text not null default 'pending'
+    check (status in ('pending', 'paid')),
+  paid_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (
+    (status = 'pending' and paid_at is null) or
+    (status = 'paid' and paid_at is not null)
+  )
+);
+
 create index if not exists transactions_date_idx
   on public.transactions (transaction_date desc);
 create index if not exists transactions_wallet_idx
@@ -162,6 +179,8 @@ create index if not exists budgets_month_idx
   on public.budgets (month);
 create index if not exists wallet_transfers_date_idx
   on public.wallet_transfers (transfer_date desc);
+create index if not exists payment_reminders_status_due_date_idx
+  on public.payment_reminders (status, due_date);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -198,11 +217,17 @@ create trigger wallet_transfers_set_updated_at
 before update on public.wallet_transfers
 for each row execute function public.set_updated_at();
 
+drop trigger if exists payment_reminders_set_updated_at on public.payment_reminders;
+create trigger payment_reminders_set_updated_at
+before update on public.payment_reminders
+for each row execute function public.set_updated_at();
+
 alter table public.categories enable row level security;
 alter table public.wallets enable row level security;
 alter table public.transactions enable row level security;
 alter table public.budgets enable row level security;
 alter table public.wallet_transfers enable row level security;
+alter table public.payment_reminders enable row level security;
 
 -- Tidak ada policy publik. Aplikasi mengakses tabel hanya melalui server
 -- menggunakan service role key, yang melewati RLS.
@@ -218,6 +243,7 @@ begin
     raise exception 'Versi backup tidak didukung';
   end if;
 
+  delete from payment_reminders;
   delete from wallet_transfers;
   delete from budgets;
   delete from transactions;
@@ -271,6 +297,20 @@ begin
     as x(
       id uuid, from_wallet_id uuid, to_wallet_id uuid, amount numeric, fee numeric,
       transfer_date date, notes text, created_at timestamptz, updated_at timestamptz
+    );
+
+  insert into payment_reminders (
+    id, title, due_date, amount, notes, status, paid_at, created_at, updated_at
+  )
+  select id, title, due_date, amount, notes, status, paid_at,
+    created_at, updated_at
+  from jsonb_to_recordset(
+    coalesce(payload #> '{data,payment_reminders}', '[]'::jsonb)
+  )
+    as x(
+      id uuid, title text, due_date date, amount numeric, notes text,
+      status text, paid_at timestamptz, created_at timestamptz,
+      updated_at timestamptz
     );
 end;
 $$;

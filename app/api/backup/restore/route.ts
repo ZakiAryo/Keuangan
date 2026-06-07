@@ -18,6 +18,7 @@ const backupSchema = z.object({
     transactions: z.array(z.record(z.unknown())),
     budgets: z.array(z.record(z.unknown())),
     wallet_transfers: z.array(z.record(z.unknown())),
+    payment_reminders: z.array(z.record(z.unknown())).default([]),
   }),
 });
 

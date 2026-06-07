@@ -71,6 +71,11 @@ setiap transaksi membuka dialog berisi informasi lengkap, preview gambar/PDF,
 unduh, hapus lampiran, dan shortcut edit. Daftar kategori memiliki sorting nama,
 tipe, metode pembayaran, serta waktu pembuatan.
 
+Halaman reminder memakai badge merah untuk tagihan terlambat, kuning untuk
+jatuh tempo hari ini, hijau untuk tagihan lunas, dan warna netral untuk tagihan
+yang masih akan datang. Navigasi mobile dapat digeser horizontal agar seluruh
+menu tetap memiliki area sentuh yang nyaman.
+
 ### Button
 
 - `primary`: simpan atau aksi utama.

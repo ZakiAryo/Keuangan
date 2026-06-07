@@ -21,6 +21,9 @@ Supabase sebelum deployment baru dipromosikan ke production.
 Jalankan juga `supabase/migrations/20260607_add_transaction_attachments.sql`
 untuk membuat kolom lampiran dan bucket Storage privat.
 
+Jalankan `supabase/migrations/20260607_add_payment_reminders.sql` untuk
+mengaktifkan reminder tagihan dan memperbarui fungsi backup/restore.
+
 ```bash
 git add .
 git commit -m "Create personal finance tracker"
@@ -72,6 +75,7 @@ bandingkan dengan hasil `npm run build` lokal.
 - Transaksi dapat dibuat dan saldo berubah.
 - Transfer memengaruhi wallet asal dan tujuan.
 - Budget menampilkan pemakaian.
+- Reminder dapat dibuat, diedit, ditandai lunas, dan muncul di dashboard.
 - Laporan dan export CSV bekerja.
 - Filter Cash/Non-Cash bekerja pada transaksi, laporan, dan CSV.
 - Upload, preview, download, ganti, dan hapus lampiran transaksi bekerja.
