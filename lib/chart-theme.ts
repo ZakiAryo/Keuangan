@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 export const CHART_COLORS = {
-  income: "#70e1b0",
+  income: "#b470e1",
   expense: "#fb7185",
   grid: "#1c2838",
   muted: "#8b9bb0",

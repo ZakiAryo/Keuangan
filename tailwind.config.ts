@@ -12,7 +12,7 @@ const config: Config = {
         panel: "#0d1420",
         line: "#1c2838",
         muted: "#8b9bb0",
-        accent: "#70e1b0",
+        accent: "#7b70e1",
         danger: "#fb7185",
       },
       boxShadow: {
